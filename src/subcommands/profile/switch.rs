@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use colored::Colorize as _;
 use inquire::Select;
-use libium::{
+use libarov::{
     config::{filters::ProfileParameters as _, structs::Config},
     iter_ext::IterExt as _,
 };
@@ -27,12 +27,7 @@ pub fn switch(config: &mut Config, profile_name: Option<String>) -> Result<()> {
             .iter()
             .map(|profile| {
                 format!(
-                    "{:8} {:7} {} {}",
-                    profile
-                        .filters
-                        .mod_loader()
-                        .map(|l| l.to_string().purple())
-                        .unwrap_or_default(),
+                    "{:7} {} {}",
                     profile
                         .filters
                         .game_versions()

@@ -1,5 +1,4 @@
 pub mod list;
-pub mod modpack;
 pub mod profile;
 mod remove;
 mod upgrade;

@@ -2,7 +2,7 @@ use super::switch;
 use anyhow::{Context as _, Result};
 use colored::Colorize as _;
 use inquire::Select;
-use libium::{
+use libarov::{
     config::{filters::ProfileParameters as _, structs::Config},
     iter_ext::IterExt as _,
 };
@@ -26,13 +26,7 @@ pub fn delete(
             .iter()
             .map(|profile| {
                 format!(
-                    "{:6} {:7} {} {}",
-                    profile
-                        .filters
-                        .mod_loader()
-                        .map(ToString::to_string)
-                        .unwrap_or_default()
-                        .purple(),
+                    "{:7} {} {}",
                     profile
                         .filters
                         .game_versions()

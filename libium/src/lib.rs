@@ -17,6 +17,11 @@ pub static GITHUB_API: LazyLock<octocrab::Octocrab> = LazyLock::new(|| {
     if let Ok(token) = std::env::var("GITHUB_TOKEN") {
         github = github.personal_token(token);
     }
+    // Set a proper User-Agent header as required by GitHub API
+    github = github.add_header(
+        "User-Agent".try_into().expect("Valid header name"), 
+        "ferium/5.0.0 (https://github.com/gorilla-devs/ferium)".to_string()
+    );
     github.build().expect("Could not build GitHub client")
 });
 

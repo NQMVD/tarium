@@ -3,9 +3,8 @@
 use crate::DEFAULT_PARALLEL_TASKS;
 use clap::{Args, Parser, Subcommand, ValueEnum, ValueHint};
 use clap_complete::Shell;
-use libium::config::{
-    filters::{self, Filter},
-    structs::ModLoader,
+use libarov::config::{
+    filters::{self, Filter}
 };
 use std::path::PathBuf;
 
@@ -24,9 +23,6 @@ pub struct Ferium {
     /// Set a GitHub personal access token for increasing the GitHub API rate limit.
     #[clap(long, visible_alias = "gh", env = "GITHUB_TOKEN")]
     pub github_token: Option<String>,
-    /// Set a custom Curseforge API key.
-    #[clap(long, visible_alias = "cf", env = "CURSEFORGE_API_KEY")]
-    pub curseforge_api_key: Option<String>,
     /// Set the file to read the config from.
     /// This does not change the `cache` and `tmp` directories.
     /// You can also use the environment variable `FERIUM_CONFIG_FILE`.
@@ -65,10 +61,6 @@ pub enum SubCommands {
     },
     /// Scan the profile's output directory (or the specified directory) for mods and add them to the profile
     Scan {
-        /// The platform you prefer mods to be added from.
-        /// If a mod isn't available from this platform, the other platform will still be used.
-        #[clap(long, short, default_value_t)]
-        platform: Platform,
         /// The directory to scan mods from.
         /// Defaults to the profile's output directory.
         #[clap(long, short,
@@ -99,13 +91,6 @@ pub enum SubCommands {
         #[clap(long, short, visible_alias = "md")]
         markdown: bool,
     },
-    /// Add, configure, delete, switch, list, or upgrade modpacks
-    Modpack {
-        #[clap(subcommand)]
-        subcommand: Option<ModpackSubCommands>,
-    },
-    /// List all the modpacks with their data
-    Modpacks,
     /// Create, configure, delete, switch, or list profiles
     Profile {
         #[clap(subcommand)]
@@ -134,10 +119,6 @@ pub enum ProfileSubCommands {
         /// The Minecraft version(s) to consider as compatible
         #[clap(long, short = 'v')]
         game_versions: Vec<String>,
-        /// The mod loader(s) to consider as compatible
-        #[clap(long, short = 'l')]
-        #[clap(value_enum)]
-        mod_loaders: Vec<ModLoader>,
         /// The name of the profile
         #[clap(long, short)]
         name: Option<String>,
@@ -156,20 +137,16 @@ pub enum ProfileSubCommands {
         #[clap(long, short, visible_aliases = ["copy", "duplicate"])]
         #[expect(clippy::option_option)]
         import: Option<Option<String>>,
-        /// The Minecraft version to check compatibility for
-        #[clap(long, short = 'v')]
-        game_version: Vec<String>,
-        /// The mod loader to check compatibility for
-        #[clap(long, short)]
-        #[clap(value_enum)]
-        mod_loader: Option<ModLoader>,
-        /// The name of the profile
-        #[clap(long, short)]
-        name: Option<String>,
         /// The directory to output mods to
         #[clap(long, short)]
         #[clap(value_hint(ValueHint::DirPath))]
         output_dir: Option<PathBuf>,
+        /// The Minecraft version to check compatibility for
+        #[clap(long, short = 'v')]
+        game_version: Vec<String>,
+        /// The name of the profile
+        #[clap(long, short)]
+        name: Option<String>,
     },
     /// Delete a profile.
     /// Optionally, provide the name of the profile to delete.
@@ -256,11 +233,6 @@ pub struct FilterArguments {
     #[clap(long)]
     pub override_profile: bool,
 
-    #[clap(long, short = 'l', group = "loader")]
-    pub mod_loader_prefer: Vec<ModLoader>,
-    #[clap(long, group = "loader")]
-    pub mod_loader_any: Vec<ModLoader>,
-
     #[clap(long, short = 'v', group = "version")]
     pub game_version_strict: Vec<String>,
     #[clap(long, group = "version")]
@@ -281,12 +253,6 @@ impl From<FilterArguments> for Vec<Filter> {
     fn from(value: FilterArguments) -> Self {
         let mut filters = vec![];
 
-        if !value.mod_loader_prefer.is_empty() {
-            filters.push(Filter::ModLoaderPrefer(value.mod_loader_prefer));
-        }
-        if !value.mod_loader_any.is_empty() {
-            filters.push(Filter::ModLoaderAny(value.mod_loader_any));
-        }
         if !value.game_version_strict.is_empty() {
             filters.push(Filter::GameVersionStrict(value.game_version_strict));
         }
@@ -307,23 +273,5 @@ impl From<FilterArguments> for Vec<Filter> {
         }
 
         filters
-    }
-}
-
-#[derive(Clone, Copy, Debug, Default, ValueEnum)]
-pub enum Platform {
-    #[default]
-    #[clap(alias = "mr")]
-    Modrinth,
-    #[clap(alias = "cf")]
-    Curseforge,
-}
-
-impl std::fmt::Display for Platform {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Modrinth => write!(f, "modrinth"),
-            Self::Curseforge => write!(f, "curseforge"),
-        }
     }
 }

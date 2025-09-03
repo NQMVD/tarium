@@ -1,7 +1,7 @@
 use anyhow::{bail, Result};
 use colored::Colorize as _;
 use inquire::MultiSelect;
-use libium::{
+use libarov::{
     config::structs::{ModIdentifier, Profile},
     iter_ext::IterExt as _,
 };
@@ -18,14 +18,10 @@ pub fn remove(profile: &mut Profile, to_remove: Vec<String>) -> Result<()> {
                 format!(
                     "{:11}  {}",
                     match &mod_.identifier {
-                        ModIdentifier::CurseForgeProject(id) => format!("CF {:8}", id.to_string()),
-                        ModIdentifier::ModrinthProject(id) => format!("MR {id:8}"),
                         ModIdentifier::GitHubRepository(..) => "GH".to_string(),
                         _ => todo!(),
                     },
                     match &mod_.identifier {
-                        ModIdentifier::ModrinthProject(_) | ModIdentifier::CurseForgeProject(_) =>
-                            mod_.name.clone(),
                         ModIdentifier::GitHubRepository(owner, repo) => format!("{owner}/{repo}"),
                         _ => todo!(),
                     },
@@ -44,8 +40,6 @@ pub fn remove(profile: &mut Profile, to_remove: Vec<String>) -> Result<()> {
             if let Some(index) = profile.mods.iter().position(|mod_| {
                 mod_.name.eq_ignore_ascii_case(&to_remove)
                     || match &mod_.identifier {
-                        ModIdentifier::CurseForgeProject(id) => id.to_string() == to_remove,
-                        ModIdentifier::ModrinthProject(id) => id == &to_remove,
                         ModIdentifier::GitHubRepository(owner, name) => {
                             format!("{owner}/{name}").eq_ignore_ascii_case(&to_remove)
                         }

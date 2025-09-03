@@ -1,17 +1,16 @@
-use super::{check_output_directory, pick_minecraft_versions, pick_mod_loader};
+use super::{check_output_directory, pick_spt_versions};
 use crate::file_picker::pick_folder;
 use anyhow::{Context as _, Result};
 use inquire::{Select, Text};
-use libium::{
+use libarov::{
     config::filters::ProfileParameters as _,
-    config::structs::{ModLoader, Profile},
+    config::structs::{Profile},
 };
 use std::path::PathBuf;
 
 pub async fn configure(
     profile: &mut Profile,
     game_versions: Vec<String>,
-    mod_loaders: Vec<ModLoader>,
     name: Option<String>,
     output_dir: Option<PathBuf>,
 ) -> Result<()> {
@@ -22,14 +21,6 @@ pub async fn configure(
             .filters
             .game_versions_mut()
             .context("Active profile does not filter by game version")? = game_versions;
-
-        interactive = false;
-    }
-    if !mod_loaders.is_empty() {
-        *profile
-            .filters
-            .mod_loaders_mut()
-            .context("Active profile does not filter mod loader")? = mod_loaders;
 
         interactive = false;
     }
@@ -71,26 +62,14 @@ pub async fn configure(
                     }
                 }
                 1 => {
+                    // TODO: refactor this, no mut here goddamnit
                     let Some(versions) = profile.filters.game_versions_mut() else {
                         println!("Active profile does not filter by game version");
                         continue;
                     };
 
-                    if let Ok(selection) = pick_minecraft_versions(versions).await {
+                    if let Ok(selection) = pick_spt_versions(versions).await {
                         *versions = selection;
-                    }
-                }
-                2 => {
-                    let Some(loaders) = profile.filters.mod_loaders_mut() else {
-                        println!("Active profile does not filter mod loader");
-                        continue;
-                    };
-
-                    if let Ok(selection) = pick_mod_loader(loaders.first()) {
-                        *loaders = match selection {
-                            ModLoader::Quilt => vec![ModLoader::Quilt, ModLoader::Fabric],
-                            loader => vec![loader],
-                        }
                     }
                 }
                 3 => {

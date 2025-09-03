@@ -1,4 +1,4 @@
-use super::{check_output_directory, pick_minecraft_versions, pick_mod_loader};
+use super::{check_output_directory, pick_spt_versions};
 use crate::file_picker::pick_folder;
 use anyhow::{bail, ensure, Context as _, Result};
 use colored::Colorize as _;
@@ -6,9 +6,9 @@ use inquire::{
     validator::{ErrorMessage, Validation},
     Confirm, Select, Text,
 };
-use libium::{
-    config::structs::{Config, ModLoader, Profile},
-    get_minecraft_dir,
+use libarov::{
+    config::{filters::Filter, structs::{Config, Profile}},
+    get_spt_dir,
     iter_ext::IterExt as _,
 };
 use std::path::PathBuf;
@@ -16,50 +16,40 @@ use std::path::PathBuf;
 #[expect(clippy::option_option)]
 pub async fn create(
     config: &mut Config,
+    output_dir: Option<PathBuf>,
     import: Option<Option<String>>,
     game_versions: Option<Vec<String>>,
-    mod_loader: Option<ModLoader>,
     name: Option<String>,
-    output_dir: Option<PathBuf>,
 ) -> Result<()> {
-    let mut profile = match (game_versions, mod_loader, name, output_dir) {
-        (Some(game_versions), Some(mod_loader), Some(name), output_dir) => {
+    let mut profile = match (game_versions, name, output_dir) {
+        (Some(game_versions), Some(name), Some(output_dir)) => {
             for profile in &config.profiles {
                 ensure!(
                     !profile.name.eq_ignore_ascii_case(&name),
                     "A profile with name {name} already exists"
                 );
             }
-            let output_dir = output_dir.unwrap_or_else(|| get_minecraft_dir().join("mods"));
+            let output_dir = output_dir;
             ensure!(
                 output_dir.is_absolute(),
                 "The provided output directory is not absolute, i.e. it is a relative path"
             );
 
-            Profile::new(name, output_dir, game_versions, mod_loader)
+            Profile::new(name, output_dir, game_versions, false)
         }
-        (None, None, None, None) => {
-            let mut selected_mods_dir = get_minecraft_dir().join("mods");
-            println!(
-                "The default mods directory is {}",
-                selected_mods_dir.display()
-            );
-            if Confirm::new("Would you like to specify a custom mods directory?")
-                .prompt()
-                .unwrap_or_default()
-            {
-                if let Some(dir) = pick_folder(
-                    &selected_mods_dir,
-                    "Pick an output directory",
-                    "Output Directory",
-                )? {
-                    check_output_directory(&dir).await?;
-                    selected_mods_dir = dir;
-                }
+        (None, None, None) => {
+            let mut selected_mods_dir = PathBuf::new();
+            if let Some(dir) = pick_folder(
+                &selected_mods_dir,
+                "Pick an output directory",
+                "Output Directory",
+            )? {
+                check_output_directory(&dir).await?;
+                selected_mods_dir = dir;
             }
-
+            
             let profiles = config.profiles.clone();
-            let name = Text::new("What should this profile be called")
+            let name = Text::new("What should this profile be called?")
                 .with_validator(move |s: &str| {
                     Ok(if profiles.iter().any(|p| p.name.eq_ignore_ascii_case(s)) {
                         Validation::Invalid(ErrorMessage::Custom(
@@ -74,12 +64,12 @@ pub async fn create(
             Profile::new(
                 name,
                 selected_mods_dir,
-                pick_minecraft_versions(&[]).await?,
-                pick_mod_loader(None)?,
+                pick_spt_versions(&[]).await?,
+                false,
             )
         }
         _ => {
-            bail!("Provide the name, game version, mod loader, and output directory options to create a profile")
+            bail!("Provide the name, game version, and output directory options to create a profile")
         }
     };
 
@@ -115,6 +105,10 @@ pub async fn create(
         };
     }
 
+    println!(
+        "{}",
+        "Done!".green()
+    );
     println!(
         "{}",
         "After adding your mods, remember to run `ferium upgrade` to download them!".yellow()

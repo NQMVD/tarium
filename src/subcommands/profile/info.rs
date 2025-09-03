@@ -1,5 +1,5 @@
 use colored::Colorize;
-use libium::{
+use libarov::{
     config::{filters::ProfileParameters as _, structs::Profile},
     iter_ext::IterExt as _,
 };
@@ -7,7 +7,7 @@ use libium::{
 pub fn info(profile: &Profile, active: bool) {
     println!(
         "{}{}
-        \r  Output directory:   {}{}{}
+        \r  Output directory:   {}{}
         \r  Mods:               {}\n",
         if active {
             profile.name.bold().italic()
@@ -20,18 +20,14 @@ pub fn info(profile: &Profile, active: bool) {
             .filters
             .game_versions()
             .map(|v| format!(
-                "\n  Minecraft Version:  {}",
+                "\n  SPT Version:  {}",
                 v.iter()
                     .map(AsRef::as_ref)
                     .map(Colorize::green)
                     .display(", ")
             ))
             .unwrap_or_default(),
-        profile
-            .filters
-            .mod_loader()
-            .map(|l| format!("\n  Mod Loader:         {}", l.to_string().purple()))
-            .unwrap_or_default(),
         profile.mods.len().to_string().yellow(),
     );
+    dbg!(&profile.filters);
 }

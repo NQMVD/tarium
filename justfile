@@ -15,3 +15,4 @@ clean-test:
     tests/md_modpack \
     tests/cf_modpack \
     tests/configs/running
+

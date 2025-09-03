@@ -1,0 +1,35 @@
+[package]
+name = "libarov"
+version = "1.32.0"
+edition = "2021"
+authors = [
+    "Ilesh Thiada (theRookieCoder) <ileshkt@gmail.com>",
+    "Daniel Hauck (SolidTux)",
+    "Noah <noahb@hey.com>",
+]
+description = "Multi-source backend for managing Minecraft mods and modpacks from Modrinth, CurseForge, and Github Releases"
+repository = "https://github.com/gorilla-devs/ferium/tree/main/libium"
+readme = "README.md"
+license = "MPL-2.0"
+categories = ["games"]
+keywords = ["mod-manager", "github-releases"]
+
+exclude = ["modpack"]
+
+[dependencies]
+serde_json.workspace = true
+octocrab.workspace = true
+reqwest.workspace = true
+clap.workspace = true
+
+derive_more = { version = "2.0", features = ["display"] }
+serde = { version = "1.0", features = ["derive"] }
+url = { version = "2.5", features = ["serde"] }
+zip = "3.0"
+zip-extensions = "0.8.3"
+futures-util = "0.3"
+directories = "6.0"
+thiserror = "2.0"
+regex = "1.11"
+sha1 = "0.10"
+chrono = "0.4.41"

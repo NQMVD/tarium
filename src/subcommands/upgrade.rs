@@ -6,10 +6,10 @@ use crate::{
 use anyhow::{anyhow, bail, Result};
 use colored::Colorize as _;
 use indicatif::ProgressBar;
-use libium::{
+use libarov::{
     config::{
         filters::ProfileParameters as _,
-        structs::{Mod, ModIdentifier, ModLoader, Profile},
+        structs::{Mod, ModIdentifier, Profile},
     },
     upgrade::{mod_downloadable, DownloadData},
 };
@@ -90,39 +90,28 @@ pub async fn get_platform_downloadables(profile: &Profile) -> Result<(Vec<Downlo
                             mod_.name,
                             download_file.filename().dimmed()
                         ));
-                        for dep in take(&mut download_file.dependencies) {
-                            dep_sender.send(Mod::new(
-                                format!(
-                                    "Dependency: {}",
-                                    match &dep {
-                                        ModIdentifier::CurseForgeProject(id) => id.to_string(),
-                                        ModIdentifier::ModrinthProject(id)
-                                        | ModIdentifier::PinnedModrinthProject(id, _) =>
-                                            id.to_owned(),
-                                        _ => unreachable!(),
-                                    }
-                                ),
-                                match dep {
-                                    ModIdentifier::PinnedModrinthProject(id, _) => {
-                                        ModIdentifier::ModrinthProject(id)
-                                    }
-                                    _ => dep,
-                                },
-                                vec![],
-                                false,
-                            ))?;
-                        }
+                        // for dep in take(&mut download_file.dependencies) {
+                        //     dep_sender.send(Mod::new(
+                        //         format!(
+                        //             "Dependency: {}",
+                        //             match &dep {
+                        //                 ModIdentifier::CurseForgeProject(id) => id.to_string(),
+                        //                 _ => unreachable!(),
+                        //             }
+                        //         ),
+                        //         match dep {
+                        //             ModIdentifier::PinnedModrinthProject(id, _) => {
+                        //                 ModIdentifier::ModrinthProject(id)
+                        //             }
+                        //             _ => dep,
+                        //         },
+                        //         vec![],
+                        //         false,
+                        //     ))?;
+                        // }
                         Ok(Some(download_file))
                     }
                     Err(err) => {
-                        if let mod_downloadable::Error::ModrinthError(
-                            ferinth::Error::RateLimitExceeded(_),
-                        ) = err
-                        {
-                            // Immediately fail if the rate limit has been exceeded
-                            progress_bar.lock().finish_and_clear();
-                            bail!(err);
-                        }
                         progress_bar.lock().println(format!(
                             "{}",
                             format!("{CROSS} {:pad_len$}  {err}", mod_.name).red()
@@ -154,9 +143,7 @@ pub async fn get_platform_downloadables(profile: &Profile) -> Result<(Vec<Downlo
 pub async fn upgrade(profile: &Profile) -> Result<()> {
     let (mut to_download, error) = get_platform_downloadables(profile).await?;
     let mut to_install = Vec::new();
-    if profile.output_dir.join("user").exists()
-        && profile.filters.mod_loader() != Some(&ModLoader::Quilt)
-    {
+    if profile.output_dir.join("user").exists() {
         for file in read_dir(profile.output_dir.join("user"))? {
             let file = file?;
             let path = file.path();

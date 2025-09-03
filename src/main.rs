@@ -1,4 +1,3 @@
-#![cfg_attr(test, feature(assert_matches))]
 #![deny(
     clippy::all,
     clippy::perf,
@@ -27,14 +26,14 @@ mod tests;
 
 use anyhow::{anyhow, bail, ensure, Context as _, Result};
 use clap::{CommandFactory, Parser};
-use cli::{Ferium, ModpackSubCommands, ProfileSubCommands, SubCommands};
+use cli::{Ferium, ProfileSubCommands, SubCommands};
 use colored::{ColoredString, Colorize};
 use indicatif::ProgressStyle;
-use libium::{
+use libarov::{
     config::{
         self,
         filters::ProfileParameters as _,
-        structs::{Config, ModIdentifier, Modpack, Profile},
+        structs::{Config, ModIdentifier, Profile},
     },
     iter_ext::IterExt as _,
 };
@@ -136,27 +135,16 @@ async fn actual_main(mut cli_app: Ferium) -> Result<()> {
             subcommand: Some(ProfileSubCommands::List),
         };
     }
-    // Alias `ferium modpacks` to `ferium modpack list`
-    if let SubCommands::Modpacks = cli_app.subcommand {
-        cli_app.subcommand = SubCommands::Modpack {
-            subcommand: Some(ModpackSubCommands::List),
-        };
-    }
 
     if let Some(token) = cli_app.github_token {
         if !token.is_empty() {
             set_var("GITHUB_TOKEN", token);
         }
     }
-    if let Some(key) = cli_app.curseforge_api_key {
-        if !key.is_empty() {
-            set_var("CURSEFORGE_API_KEY", key);
-        }
-    }
 
     let _ = SEMAPHORE.set(Semaphore::new(cli_app.parallel_tasks));
 
-    let old_default_config_path = libium::BASE_DIRS
+    let old_default_config_path = libarov::BASE_DIRS
         .home_dir()
         .join(".config")
         .join("ferium")
@@ -171,9 +159,10 @@ async fn actual_main(mut cli_app: Ferium) -> Result<()> {
             }
             #[cfg(not(target_os = "macos"))]
             {
-                libium::PROJECT_DIRS.config_dir().join("config.json")
+                libarov::PROJECT_DIRS.config_dir().join("config.json")
             }
         });
+    dbg!(config_path);
 
     // Handle old configs which may be in a different path
     if !config_path.exists() && old_default_config_path.exists() {
@@ -187,11 +176,10 @@ async fn actual_main(mut cli_app: Ferium) -> Result<()> {
 
     // Run function(s) based on the sub(sub)command to be executed
     match cli_app.subcommand {
-        SubCommands::Complete { .. } | SubCommands::Profiles | SubCommands::Modpacks => {
+        SubCommands::Complete { .. } | SubCommands::Profiles => {
             unreachable!();
         }
         SubCommands::Scan {
-            platform,
             directory,
             force,
         } => {
@@ -200,39 +188,26 @@ async fn actual_main(mut cli_app: Ferium) -> Result<()> {
             let spinner = indicatif::ProgressBar::new_spinner().with_message("Reading files");
             spinner.enable_steady_tick(std::time::Duration::from_millis(100));
 
-            let ids = libium::scan(directory.as_ref().unwrap_or(&profile.output_dir), || {
-                spinner.set_message("Querying servers");
-            })
-            .await?;
+            // TODO: migrate this?
+            // let ids = libarov::scan(directory.as_ref().unwrap_or(&profile.output_dir), || {
+            //     spinner.set_message("Querying servers");
+            // })
+            // .await?;
 
             spinner.set_message("Adding mods");
 
             let mut send_ids = Vec::new();
-            for id in ids {
-                use libium::config::structs::ModIdentifier;
-                match id {
-                    (filename, None, None) => {
-                        println!("{} {}", "Unknown file:".yellow(), filename.dimmed());
-                    }
-                    (_, Some(mr_id), None) => {
-                        send_ids.push(ModIdentifier::ModrinthProject(mr_id));
-                    }
-                    (_, None, Some(cf_id)) => {
-                        send_ids.push(ModIdentifier::CurseForgeProject(cf_id));
-                    }
-                    (_, Some(mr_id), Some(cf_id)) => match platform {
-                        cli::Platform::Modrinth => {
-                            send_ids.push(ModIdentifier::ModrinthProject(mr_id));
-                        }
-                        cli::Platform::Curseforge => {
-                            send_ids.push(ModIdentifier::CurseForgeProject(cf_id));
-                        }
-                    },
-                }
-            }
+            // for id in ids {
+            //     use libarov::config::structs::ModIdentifier;
+            //     match id {
+            //         (filename, None, None) => {
+            //             println!("{} {}", "Unknown file:".yellow(), filename.dimmed());
+            //         },
+            //     }
+            // }
 
             let (successes, failures) =
-                libium::add(profile, send_ids, !force, false, vec![]).await?;
+                libarov::add(profile, send_ids, !force, false, vec![]).await?;
             spinner.finish_and_clear();
 
             did_add_fail = add::display_successes_failures(&successes, failures);
@@ -259,17 +234,8 @@ async fn actual_main(mut cli_app: Ferium) -> Result<()> {
             );
 
             let identifiers = if let Some(pin) = pin {
-                let id = libium::add::parse_id(identifiers[0].clone());
+                let id = libarov::add::parse_id(identifiers[0].clone());
                 vec![match id {
-                    ModIdentifier::CurseForgeProject(project_id) => {
-                        ModIdentifier::PinnedCurseForgeProject(
-                            project_id,
-                            pin.parse().context("Invalid file ID for CurseForge file")?,
-                        )
-                    }
-                    ModIdentifier::ModrinthProject(project_id) => {
-                        ModIdentifier::PinnedModrinthProject(project_id, pin)
-                    }
                     ModIdentifier::GitHubRepository(owner, repo) => {
                         ModIdentifier::PinnedGitHubRepository(
                             (owner, repo),
@@ -281,12 +247,12 @@ async fn actual_main(mut cli_app: Ferium) -> Result<()> {
             } else {
                 identifiers
                     .into_iter()
-                    .map(libium::add::parse_id)
+                    .map(libarov::add::parse_id)
                     .collect_vec()
             };
 
             let (successes, failures) =
-                libium::add(profile, identifiers, !force, override_profile, filters).await?;
+                libarov::add(profile, identifiers, !force, override_profile, filters).await?;
 
             did_add_fail = add::display_successes_failures(&successes, failures);
         }
@@ -298,15 +264,9 @@ async fn actual_main(mut cli_app: Ferium) -> Result<()> {
                 subcommands::list::verbose(profile, markdown).await?;
             } else {
                 println!(
-                    "{} {} on {} {}\n",
+                    "{} {} on {}\n",
                     profile.name.bold(),
                     format!("({} mods)", profile.mods.len()).yellow(),
-                    profile
-                        .filters
-                        .mod_loader()
-                        .map(ToString::to_string)
-                        .unwrap_or_default()
-                        .purple(),
                     profile
                         .filters
                         .game_versions()
@@ -319,98 +279,16 @@ async fn actual_main(mut cli_app: Ferium) -> Result<()> {
                     println!(
                         "{:20}  {}",
                         match &mod_.identifier {
-                            ModIdentifier::CurseForgeProject(id) =>
-                                format!("{} {:8}", "CF".red(), id.to_string().dimmed()),
-                            ModIdentifier::ModrinthProject(id) =>
-                                format!("{} {:8}", "MR".green(), id.dimmed()),
                             ModIdentifier::GitHubRepository(..) => "GH".purple().to_string(),
                             _ => todo!(),
                         },
                         match &mod_.identifier {
-                            ModIdentifier::ModrinthProject(_)
-                            | ModIdentifier::CurseForgeProject(_) => mod_.name.bold().to_string(),
                             ModIdentifier::GitHubRepository(owner, repo) =>
                                 format!("{}/{}", owner.dimmed(), repo.bold()),
                             _ => todo!(),
                         },
                     );
                 }
-            }
-        }
-        SubCommands::Modpack { subcommand } => {
-            let mut default_flag = false;
-            let subcommand = subcommand.unwrap_or_else(|| {
-                default_flag = true;
-                ModpackSubCommands::Info
-            });
-            match subcommand {
-                ModpackSubCommands::Add {
-                    identifier,
-                    output_dir,
-                    install_overrides,
-                } => {
-                    if let Ok(project_id) = identifier.parse::<i32>() {
-                        subcommands::modpack::add::curseforge(
-                            &mut config,
-                            project_id,
-                            output_dir,
-                            install_overrides,
-                        )
-                        .await?;
-                    } else if let Err(err) = subcommands::modpack::add::modrinth(
-                        &mut config,
-                        &identifier,
-                        output_dir,
-                        install_overrides,
-                    )
-                    .await
-                    {
-                        return Err(
-                            if let Some(&ferinth::Error::InvalidIDorSlug) = err.downcast_ref() {
-                                anyhow!("Invalid identifier")
-                            } else {
-                                err
-                            },
-                        );
-                    }
-                }
-                ModpackSubCommands::Configure {
-                    output_dir,
-                    install_overrides,
-                } => {
-                    subcommands::modpack::configure(
-                        get_active_modpack(&mut config)?,
-                        output_dir,
-                        install_overrides,
-                    )?;
-                }
-                ModpackSubCommands::Delete {
-                    modpack_name,
-                    switch_to,
-                } => {
-                    subcommands::modpack::delete(&mut config, modpack_name, switch_to)?;
-                }
-                ModpackSubCommands::Info => {
-                    subcommands::modpack::info(get_active_modpack(&mut config)?, true);
-                }
-                ModpackSubCommands::List => {
-                    for (i, modpack) in config.modpacks.iter().enumerate() {
-                        subcommands::modpack::info(modpack, i == config.active_modpack);
-                    }
-                }
-                ModpackSubCommands::Switch { modpack_name } => {
-                    subcommands::modpack::switch(&mut config, modpack_name)?;
-                }
-                ModpackSubCommands::Upgrade => {
-                    subcommands::modpack::upgrade(get_active_modpack(&mut config)?).await?;
-                }
-            }
-            if default_flag {
-                println!(
-                    "{} ferium modpack help {}",
-                    "Use".yellow(),
-                    "for more information about this subcommand".yellow()
-                );
             }
         }
         SubCommands::Profile { subcommand } => {
@@ -422,14 +300,12 @@ async fn actual_main(mut cli_app: Ferium) -> Result<()> {
             match subcommand {
                 ProfileSubCommands::Configure {
                     game_versions,
-                    mod_loaders,
                     name,
                     output_dir,
                 } => {
                     subcommands::profile::configure(
                         get_active_profile(&mut config)?,
                         game_versions,
-                        mod_loaders,
                         name,
                         output_dir,
                     )
@@ -437,22 +313,20 @@ async fn actual_main(mut cli_app: Ferium) -> Result<()> {
                 }
                 ProfileSubCommands::Create {
                     import,
-                    game_version,
-                    mod_loader,
-                    name,
                     output_dir,
+                    game_version,
+                    name,
                 } => {
                     subcommands::profile::create(
                         &mut config,
+                        output_dir,
                         import,
                         if game_version.is_empty() {
                             None
                         } else {
                             Some(game_version)
                         },
-                        mod_loader,
                         name,
-                        output_dir,
                     )
                     .await?;
                 }
@@ -505,7 +379,7 @@ async fn actual_main(mut cli_app: Ferium) -> Result<()> {
     config::write_config(config_path, &config)?;
 
     if did_add_fail {
-        Err(anyhow!(""))
+        Err(anyhow!("says did_add_fail here i guess..."))
     } else {
         Ok(())
     }
@@ -530,25 +404,6 @@ fn get_active_profile(config: &mut Config) -> Result<&mut Profile> {
         _ => (),
     }
     Ok(&mut config.profiles[config.active_profile])
-}
-
-/// Get the active modpack with error handling
-fn get_active_modpack(config: &mut Config) -> Result<&mut Modpack> {
-    match config.modpacks.len() {
-        0 => bail!("There are no modpacks configured, add a modpack using `ferium modpack add`"),
-        1 => config.active_modpack = 0,
-        n if n <= config.active_modpack => {
-            println!(
-                "{}",
-                "Active modpack specified incorrectly, please pick a modpack to use"
-                    .red()
-                    .bold()
-            );
-            subcommands::modpack::switch(config, None)?;
-        }
-        _ => (),
-    }
-    Ok(&mut config.modpacks[config.active_modpack])
 }
 
 /// Check if `profile` is empty, and if so return an error

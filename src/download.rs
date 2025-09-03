@@ -6,7 +6,7 @@ use fs_extra::{
     file::{move_file, CopyOptions as FileCopyOptions},
 };
 use indicatif::ProgressBar;
-use libium::{iter_ext::IterExt as _, upgrade::DownloadData};
+use libarov::{iter_ext::IterExt as _, upgrade::DownloadData};
 use parking_lot::Mutex;
 use std::{
     ffi::OsString,

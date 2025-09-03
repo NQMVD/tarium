@@ -22,9 +22,7 @@ keywords = [
 [dependencies]
 serde_json.workspace = true
 octocrab.workspace = true
-ferinth.workspace = true
 reqwest.workspace = true
-furse.workspace = true
 clap.workspace = true
 
 derive_more = { version = "2.0", features = ["display"] }
