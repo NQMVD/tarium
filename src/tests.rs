@@ -2,7 +2,7 @@
 
 use crate::{
     actual_main,
-    cli::{Ferium, FilterArguments, ProfileSubCommands, SubCommands},
+    cli::{Tarium, FilterArguments, ProfileSubCommands, SubCommands},
 };
 use std::{
     env::current_dir,
@@ -10,15 +10,16 @@ use std::{
     path::PathBuf,
 };
 
-const DEFAULT: Ferium = Ferium {
+const DEFAULT: Tarium = Tarium {
     subcommand: SubCommands::Profile { subcommand: None },
     threads: None,
     parallel_tasks: 10,
     github_token: None,
     config_file: None,
+    verbosity: 2,
 };
 
-fn get_args(subcommand: SubCommands, config_file: Option<&str>) -> Ferium {
+fn get_args(subcommand: SubCommands, config_file: Option<&str>) -> Tarium {
     let running = PathBuf::from(".")
         .join("tests")
         .join("configs")
@@ -28,7 +29,7 @@ fn get_args(subcommand: SubCommands, config_file: Option<&str>) -> Ferium {
     if let Some(config_file) = config_file {
         copy(format!("./tests/configs/{config_file}.json"), &running).unwrap();
     }
-    Ferium {
+    Tarium {
         subcommand,
         config_file: Some(running),
         ..DEFAULT
@@ -229,22 +230,6 @@ async fn already_added() {
         Ok(()),
     ));
 }
-
-#[tokio::test(flavor = "multi_thread")]
-async fn scan() {
-    assert!(matches!(
-        actual_main(get_args(
-            SubCommands::Scan {
-                directory: Some(current_dir().unwrap().join("tests").join("test_mods")),
-                force: false,
-            },
-            Some("empty_profile"),
-        ))
-        .await,
-        Ok(()),
-    ));
-}
-
 
 #[tokio::test(flavor = "multi_thread")]
 async fn list_no_profile() {

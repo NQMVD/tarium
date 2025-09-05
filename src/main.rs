@@ -21,15 +21,17 @@ mod cli;
 mod download;
 mod file_picker;
 mod subcommands;
+mod logging;
 
 #[cfg(test)]
 mod tests;
 
 use anyhow::{anyhow, bail, ensure, Context as _, Result};
 use clap::{CommandFactory, Parser};
-use cli::{Ferium, ProfileSubCommands, SubCommands};
+use cli::{Tarium, ProfileSubCommands, SubCommands};
 use colored::{ColoredString, Colorize};
 use indicatif::ProgressStyle;
+use log::{debug, warn, info};
 use libarov::{
     config::{
         self,
@@ -81,11 +83,17 @@ fn main() -> ExitCode {
         colored::control::set_virtual_terminal(true).unwrap();
     }
 
-    let cli = Ferium::parse();
+    let cli = Tarium::parse();
+
+    if let Err(e) = logging::setup_logger(cli.verbosity) {
+        eprintln!("failed to init logger: {e}");
+    } else {
+        debug!("logger initialised");
+    }
 
     let mut builder = tokio::runtime::Builder::new_multi_thread();
     builder.enable_all();
-    builder.thread_name("ferium-worker");
+    builder.thread_name("tarium-worker");
     if let Some(threads) = cli.threads {
         builder.worker_threads(threads);
     }
@@ -118,19 +126,19 @@ fn main() -> ExitCode {
     }
 }
 
-async fn actual_main(mut cli_app: Ferium) -> Result<()> {
+async fn actual_main(mut cli_app: Tarium) -> Result<()> {
     // The complete command should not require a config.
-    // See [#139](https://github.com/gorilla-devs/ferium/issues/139) for why this might be a problem.
+    // See [#139](https://github.com/gorilla-devs/tarium/issues/139) for why this might be a problem.
     if let SubCommands::Complete { shell } = cli_app.subcommand {
         clap_complete::generate(
             shell,
-            &mut Ferium::command(),
-            "ferium",
+            &mut Tarium::command(),
+            "tarium",
             &mut std::io::stdout(),
         );
         return Ok(());
     }
-    // Alias `ferium profiles` to `ferium profile list`
+    // Alias `tarium profiles` to `tarium profile list`
     if let SubCommands::Profiles = cli_app.subcommand {
         cli_app.subcommand = SubCommands::Profile {
             subcommand: Some(ProfileSubCommands::List),
@@ -148,11 +156,11 @@ async fn actual_main(mut cli_app: Ferium) -> Result<()> {
     let old_default_config_path = libarov::BASE_DIRS
         .home_dir()
         .join(".config")
-        .join("ferium")
+        .join("tarium")
         .join("config.json");
     let config_path = &cli_app
         .config_file
-        .or_else(|| var_os("FERIUM_CONFIG_FILE").map(Into::into))
+        .or_else(|| var_os("TARIUM_CONFIG_FILE").map(Into::into))
         .unwrap_or({
             #[cfg(target_os = "macos")]
             {
@@ -163,7 +171,7 @@ async fn actual_main(mut cli_app: Ferium) -> Result<()> {
                 libarov::PROJECT_DIRS.config_dir().join("config.json")
             }
         });
-    dbg!(config_path);
+    debug!(config_path:debug; "Resolved config path");
 
     // Handle old configs which may be in a different path
     if !config_path.exists() && old_default_config_path.exists() {
@@ -172,46 +180,16 @@ async fn actual_main(mut cli_app: Ferium) -> Result<()> {
     }
 
     let mut config = config::read_config(config_path)?;
+    debug!("Loaded config with {} profiles", config.profiles.len());
 
+    // TODO: this needs a fucking rework holy shit
     let mut did_add_fail = false;
 
     // Run function(s) based on the sub(sub)command to be executed
+    debug!(SCOPE = "clap", subcommand:debug = cli_app.subcommand; "Executing");
     match cli_app.subcommand {
         SubCommands::Complete { .. } | SubCommands::Profiles => {
             unreachable!();
-        }
-        SubCommands::Scan {
-            directory,
-            force,
-        } => {
-            let profile = get_active_profile(&mut config)?;
-
-            let spinner = indicatif::ProgressBar::new_spinner().with_message("Reading files");
-            spinner.enable_steady_tick(std::time::Duration::from_millis(100));
-
-            // TODO: migrate this?
-            // let ids = libarov::scan(directory.as_ref().unwrap_or(&profile.output_dir), || {
-            //     spinner.set_message("Querying servers");
-            // })
-            // .await?;
-
-            spinner.set_message("Adding mods");
-
-            let mut send_ids = Vec::new();
-            // for id in ids {
-            //     use libarov::config::structs::ModIdentifier;
-            //     match id {
-            //         (filename, None, None) => {
-            //             println!("{} {}", "Unknown file:".yellow(), filename.dimmed());
-            //         },
-            //     }
-            // }
-
-            let (successes, failures) =
-                libarov::add(profile, send_ids, !force, false, vec![]).await?;
-            spinner.finish_and_clear();
-
-            did_add_fail = add::display_successes_failures(&successes, failures);
         }
         SubCommands::Add {
             identifiers,
@@ -353,7 +331,7 @@ async fn actual_main(mut cli_app: Ferium) -> Result<()> {
             }
             if default_flag {
                 println!(
-                    "{} ferium profile help {}",
+                    "{} tarium profile help {}",
                     "Use".yellow(),
                     "for more information about this subcommand".yellow()
                 );
@@ -377,6 +355,7 @@ async fn actual_main(mut cli_app: Ferium) -> Result<()> {
             .sort_unstable_by_key(|mod_| mod_.name.to_lowercase());
     });
     // Update config file with possibly edited config
+    debug!("Persisting config changes to {:?}", config_path);
     config::write_config(config_path, &config)?;
 
     if did_add_fail {
@@ -390,10 +369,11 @@ async fn actual_main(mut cli_app: Ferium) -> Result<()> {
 fn get_active_profile(config: &mut Config) -> Result<&mut Profile> {
     match config.profiles.len() {
         0 => {
-            bail!("There are no profiles configured, add a profile using `ferium profile create`")
+            bail!("There are no profiles configured, add a profile using `tarium profile create`")
         }
         1 => config.active_profile = 0,
         n if config.active_profile >= n => {
+            warn!("Active profile index out of bounds, prompting switch");
             println!(
                 "{}",
                 "Active profile specified incorrectly, please pick a profile to use"
@@ -411,7 +391,7 @@ fn get_active_profile(config: &mut Config) -> Result<&mut Profile> {
 fn check_empty_profile(profile: &Profile) -> Result<()> {
     ensure!(
         !profile.mods.is_empty(),
-        "Your currently selected profile is empty! Run `ferium help` to see how to add mods"
+        "Your currently selected profile is empty! Run `tarium help` to see how to add mods"
     );
     Ok(())
 }

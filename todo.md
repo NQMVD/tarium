@@ -1,7 +1,7 @@
 # high priority
 
 - [ ] add logging for when filters couldnt match anything, or generally more logging...
-    - [ ] take custom logging i made from needs
+    - [x] take custom logging i made from needs
 
 - [x] fix 7z? download fails for TommySoucy/MoreCheckmarks
     - [x] Add 7z extraction (e.g. sevenz-rust)
@@ -23,13 +23,13 @@
         - [ ] try its progressbars, if they suck too, remove em
     - [ ] or askr (newer and not so sophisticated)
 
-- [ ] remove scan command as its not gonna work with dragged-in folders...
+- [x] remove scan command as its not gonna work with dragged-in folders...
 
 - [ ] use SPT\user\cache for downloads?
 - [ ] move processed archives to output_dir/.old after successful extraction to reduce clutter.
 
 - [ ] fix game versions filter bullshit somehow
-    - [ ] somewhat fixed, selection algo is better for sure
+    - [x] somewhat fixed, selection algo is better for sure
 
 - [ ] after extracting and moving mods, the ones in user/mods should get the package.json data checked for addition check for game version compatibility
 

@@ -10,7 +10,7 @@ use std::path::PathBuf;
 
 #[derive(Clone, Debug, Parser)]
 #[clap(author, version, about)]
-pub struct Ferium {
+pub struct Tarium {
     #[clap(subcommand)]
     pub subcommand: SubCommands,
     /// Sets the number of worker threads the tokio runtime will use.
@@ -20,12 +20,15 @@ pub struct Ferium {
     /// Specify the maximum number of simultaneous parallel tasks.
     #[clap(long, short = 'p', default_value_t = DEFAULT_PARALLEL_TASKS)]
     pub parallel_tasks: usize,
+    /// Increase output verbosity (-v, -vv, -vvv, etc.)
+    #[clap(long, short = 'v', action = clap::ArgAction::Count)]
+    pub verbosity: u8,
     /// Set a GitHub personal access token for increasing the GitHub API rate limit.
     #[clap(long, visible_alias = "gh", env = "GITHUB_TOKEN")]
     pub github_token: Option<String>,
     /// Set the file to read the config from.
     /// This does not change the `cache` and `tmp` directories.
-    /// You can also use the environment variable `FERIUM_CONFIG_FILE`.
+    /// You can also use the environment variable `TARIUM_CONFIG_FILE`.
     #[clap(long, short, visible_aliases = ["config", "conf"])]
     #[clap(value_hint(ValueHint::FilePath))]
     pub config_file: Option<PathBuf>,
@@ -58,19 +61,6 @@ pub enum SubCommands {
 
         #[command(flatten)]
         filters: FilterArguments,
-    },
-    /// Scan the profile's output directory (or the specified directory) for mods and add them to the profile
-    Scan {
-        /// The directory to scan mods from.
-        /// Defaults to the profile's output directory.
-        #[clap(long, short,
-            visible_aliases = ["dir", "folder"],
-            aliases = ["output_directory", "out_dir"]
-        )]
-        directory: Option<PathBuf>,
-        /// Temporarily ignore game version and mod loader checks and add the mods anyway
-        #[clap(long, short, visible_alias = "override")]
-        force: bool,
     },
     /// Print shell auto completions for the specified shell
     Complete {

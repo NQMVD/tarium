@@ -3,6 +3,7 @@ use libarov::{
     config::{filters::ProfileParameters as _, structs::Profile},
     iter_ext::IterExt as _,
 };
+use log::debug;
 
 pub fn info(profile: &Profile, active: bool) {
     println!(
@@ -20,7 +21,7 @@ pub fn info(profile: &Profile, active: bool) {
             .filters
             .game_versions()
             .map(|v| format!(
-                "\n  SPT Version:  {}",
+                "\n  SPT Version:        {}",
                 v.iter()
                     .map(AsRef::as_ref)
                     .map(Colorize::green)
@@ -29,5 +30,5 @@ pub fn info(profile: &Profile, active: bool) {
             .unwrap_or_default(),
         profile.mods.len().to_string().yellow(),
     );
-    dbg!(&profile.filters);
+    debug!(filters:debug = profile.filters; "Profile");
 }
