@@ -1,3 +1,5 @@
+#![cfg_attr(debug_assertions, allow(warnings))]
+
 pub mod add;
 pub mod config;
 pub mod iter_ext;

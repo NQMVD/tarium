@@ -14,6 +14,7 @@
 #![deny(clippy::expect_used, reason = "Use anyhow::Context instead")]
 #![warn(clippy::dbg_macro)]
 #![expect(clippy::multiple_crate_versions, clippy::too_many_lines)]
+#![cfg_attr(debug_assertions, allow(warnings))]
 
 mod add;
 mod cli;

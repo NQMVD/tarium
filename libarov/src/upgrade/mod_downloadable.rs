@@ -79,7 +79,7 @@ impl Mod {
                         let has_game_version_filters = filters.iter().any(|f| matches!(f, Filter::GameVersionStrict(_) | Filter::GameVersionMinor(_)));
                         if all_empty_versions && has_game_version_filters {
                             if let Some((metadata, dd)) = download_files.first() {
-                                println!("Warning: no version tags found in release '{}'; using latest asset without version filtering.", metadata.title);
+                                println!("  Warning: no version tags found in release '{}'; using latest asset without version filtering.", metadata.title);
                                 return Ok(dd.clone());
                             } else {
                                 return Err(super::check::Error::NoCompatibleFiles.into());
@@ -98,7 +98,7 @@ impl Mod {
                                 }
                             }
                             // All non-version filters passed
-                            println!("Warning: bypassing game version filter; using asset '{}' without matching version tags.", metadata.filename);
+                            println!("  Warning: bypassing game version filter; using asset '{}' without matching version tags.", metadata.filename);
                             return Ok(dd.clone());
                         }
 

@@ -5,7 +5,7 @@ use fs_extra::{
     dir::{copy as copy_dir, CopyOptions as DirCopyOptions},
     file::{move_file, CopyOptions as FileCopyOptions},
 };
-use indicatif::ProgressBar;
+// use indicatif::ProgressBar; // Temporarily disabled progress bar
 use libarov::{iter_ext::IterExt as _, upgrade::DownloadData};
 use parking_lot::Mutex;
 use std::{
@@ -97,23 +97,23 @@ pub async fn download(
     to_download: Vec<DownloadData>,
     to_install: Vec<(OsString, PathBuf)>,
 ) -> Result<()> {
-    let progress_bar = Arc::new(Mutex::new(
-        ProgressBar::new(
-            to_download
-                .iter()
-                .map(|downloadable| downloadable.length as u64)
-                .sum(),
-        )
-        .with_style(STYLE_BYTE.clone()),
-    ));
-    progress_bar
-        .lock()
-        .enable_steady_tick(Duration::from_millis(100));
+    // let progress_bar = Arc::new(Mutex::new(
+    //     ProgressBar::new(
+    //         to_download
+    //             .iter()
+    //             .map(|downloadable| downloadable.length as u64)
+    //             .sum(),
+    //     )
+    //     .with_style(STYLE_BYTE.clone()),
+    // ));
+    // progress_bar
+    //     .lock()
+    //     .enable_steady_tick(Duration::from_millis(100));
     let mut tasks = JoinSet::new();
     let client = reqwest::Client::new();
 
     for downloadable in to_download {
-        let progress_bar = Arc::clone(&progress_bar);
+        // let progress_bar = Arc::clone(&progress_bar);
         let client = client.clone();
         let output_dir = output_dir.clone();
 
@@ -121,11 +121,11 @@ pub async fn download(
             let _permit = SEMAPHORE.get_or_init(default_semaphore).acquire().await?;
 
             let (length, filename) = downloadable
-                .download(client, &output_dir, |additional| {
-                    progress_bar.lock().inc(additional as u64);
+                .download(client, &output_dir, |_additional| {
+                    // progress_bar.lock().inc(additional as u64);
                 })
                 .await?;
-            progress_bar.lock().println(format!(
+            println!(
                 "{} Downloaded  {:>7}  {}",
                 &*TICK,
                 size::Size::from_bytes(length)
@@ -133,17 +133,17 @@ pub async fn download(
                     .with_base(size::Base::Base10)
                     .to_string(),
                 filename.dimmed(),
-            ));
+            );
             Ok::<(), Error>(())
         });
     }
     for res in tasks.join_all().await {
         res?;
     }
-    Arc::try_unwrap(progress_bar)
-        .map_err(|_| anyhow!("Failed to run threads to completion"))?
-        .into_inner()
-        .finish_and_clear();
+    // Arc::try_unwrap(progress_bar)
+    //     .map_err(|_| anyhow!("Failed to run threads to completion"))?
+    //     .into_inner()
+    //     .finish_and_clear();
     for (name, path) in to_install {
         if path.is_file() {
             copy(path, output_dir.join(&name))?;

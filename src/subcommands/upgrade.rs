@@ -5,7 +5,7 @@ use crate::{
 };
 use anyhow::{anyhow, bail, Result};
 use colored::Colorize as _;
-use indicatif::ProgressBar;
+// use indicatif::ProgressBar; // Temporarily disabled progress bar
 use libarov::{
     config::{
         filters::ProfileParameters as _,
@@ -144,13 +144,14 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
 /// If an error occurs with a resolving task, instead of failing immediately,
 /// resolution will continue and the error return flag is set to true.
 pub async fn get_platform_downloadables(profile: &Profile) -> Result<(Vec<DownloadData>, bool)> {
-    let progress_bar = Arc::new(Mutex::new(ProgressBar::new(0).with_style(STYLE_NO.clone())));
+    // let progress_bar = Arc::new(Mutex::new(ProgressBar::new(0).with_style(STYLE_NO.clone())));
+    // Progress bar temporarily disabled
     let mut tasks = JoinSet::new();
 
     println!("{}\n", "Determining the Latest Compatible Versions".bold());
-    progress_bar
-        .lock()
-        .enable_steady_tick(Duration::from_millis(100));
+    // progress_bar
+    //     .lock()
+    //     .enable_steady_tick(Duration::from_millis(100));
     let pad_len = profile
         .mods
         .iter()
@@ -161,30 +162,30 @@ pub async fn get_platform_downloadables(profile: &Profile) -> Result<(Vec<Downlo
 
     // Spawn a task per mod (dependency expansion can be re-added later if needed)
     for mod_ in profile.mods.clone() {
-        progress_bar.lock().inc_length(1);
+        // progress_bar.lock().inc_length(1);
         let filters = profile.filters.clone();
-        let progress_bar = Arc::clone(&progress_bar);
+        // let progress_bar = Arc::clone(&progress_bar);
         tasks.spawn(async move {
             let permit = SEMAPHORE.get_or_init(default_semaphore).acquire().await?;
             let result = mod_.fetch_download_file(filters).await;
             drop(permit);
 
-            progress_bar.lock().inc(1);
+            // progress_bar.lock().inc(1);
             match result {
                 Ok(download_file) => {
-                    progress_bar.lock().println(format!(
+                    println!(
                         "{} {:pad_len$}  {}",
                         TICK.clone(),
                         mod_.name,
                         download_file.filename().dimmed()
-                    ));
+                    );
                     Ok(Some(download_file))
                 }
                 Err(err) => {
-                    progress_bar.lock().println(format!(
+                    println!(
                         "{}",
                         format!("{CROSS} {:pad_len$}  {err}", mod_.name).red()
-                    ));
+                    );
                     Ok(None)
                 }
             }
@@ -198,7 +199,7 @@ pub async fn get_platform_downloadables(profile: &Profile) -> Result<(Vec<Downlo
         .into_iter()
         .collect::<Result<Vec<_>>>()?;
 
-    progress_bar.lock().finish_and_clear();
+    // progress_bar.lock().finish_and_clear();
 
     let error = task_results.iter().any(Option::is_none);
     let to_download = task_results.into_iter().flatten().collect();
