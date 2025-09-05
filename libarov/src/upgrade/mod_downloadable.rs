@@ -1,16 +1,11 @@
-use super::{
-    from_gh_asset, from_gh_releases, DistributionDeniedError,
-    DownloadData,
-};
+use super::{from_gh_asset, from_gh_releases, DistributionDeniedError, DownloadData};
 use crate::{
     config::{
         filters::Filter,
         structs::{Mod, ModIdentifier},
     },
-    iter_ext::IterExt as _,
     GITHUB_API,
 };
-use std::cmp::Reverse;
 
 #[derive(Debug, thiserror::Error)]
 #[error(transparent)]
@@ -75,7 +70,24 @@ impl Mod {
 
                 match best_candidate {
                     Some(download_data) => Ok(download_data.clone()),
-                    None => Err(super::check::Error::NoCompatibleFiles.into()),
+                    None => {
+                        // Fallback: if every candidate has empty game_versions and the only
+                        // failing filters are GameVersion filters, allow the newest asset.
+                        let all_empty_versions = download_files
+                            .iter()
+                            .all(|(m, _)| m.game_versions.is_empty());
+                        let has_game_version_filters = filters.iter().any(|f| matches!(f, Filter::GameVersionStrict(_) | Filter::GameVersionMinor(_)));
+                        if all_empty_versions && has_game_version_filters {
+                            if let Some((metadata, dd)) = download_files.first() {
+                                println!("Warning: no version tags found in release '{}'; using latest asset without version filtering.", metadata.title);
+                                Ok(dd.clone())
+                            } else {
+                                Err(super::check::Error::NoCompatibleFiles.into())
+                            }
+                        } else {
+                            Err(super::check::Error::NoCompatibleFiles.into())
+                        }
+                    }
                 }
             }
         }

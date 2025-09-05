@@ -21,6 +21,108 @@ use std::{
     time::Duration,
 };
 use tokio::task::JoinSet;
+use std::{fs::{self, File, create_dir_all, copy as fs_copy}, path::{Path, PathBuf}};
+use zip::ZipArchive;
+
+fn extract_all_archives(output_dir: &Path) -> Result<()> {
+    for entry in fs::read_dir(output_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_file() {
+            if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+                match ext.to_ascii_lowercase().as_str() {
+                    "zip" => {
+                        if let Err(e) = extract_zip(&path, output_dir) {
+                            println!("{} Failed extracting {}: {}", CROSS.red(), path.file_name().unwrap_or_default().to_string_lossy(), e);
+                        } else {
+                            println!("{} Extracted        {}", TICK.clone(), path.file_name().unwrap_or_default().to_string_lossy().dimmed());
+                        }
+                    }
+                    "7z" => {
+                        println!("{} 7z extraction not yet supported: {}", CROSS.red(), path.file_name().unwrap_or_default().to_string_lossy());
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn extract_zip(zip_path: &Path, output_dir: &Path) -> Result<()> {
+    let file = File::open(zip_path)?;
+    let mut archive = ZipArchive::new(file)?;
+    let temp_dir = output_dir.join(".extract_tmp").join(zip_path.file_stem().unwrap_or_default());
+    if temp_dir.exists() { fs::remove_dir_all(&temp_dir)?; }
+    create_dir_all(&temp_dir)?;
+
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i)?;
+        let outpath = temp_dir.join(file.mangled_name());
+        if file.is_dir() {
+            create_dir_all(&outpath)?;
+        } else {
+            if let Some(parent) = outpath.parent() { create_dir_all(parent)?; }
+            let mut outfile = File::create(&outpath)?;
+            std::io::copy(&mut file, &mut outfile)?;
+        }
+    }
+    install_extracted(&temp_dir, output_dir)?;
+    fs::remove_dir_all(&temp_dir)?;
+    Ok(())
+}
+
+fn install_extracted(temp_dir: &Path, output_dir: &Path) -> Result<()> {
+    // Collapse single-folder wrappers
+    let mut root = temp_dir.to_path_buf();
+    if let Ok(entries) = fs::read_dir(&root) {
+        let collected: Vec<_> = entries.filter_map(|e| e.ok()).collect();
+        if collected.len() == 1 && collected[0].file_type().map(|t| t.is_dir()).unwrap_or(false) {
+            root = collected[0].path();
+        }
+    }
+
+    // Merge BepInEx if present
+    let bep = root.join("BepInEx");
+    if bep.exists() {
+        copy_dir_recursive(&bep, &output_dir.join("BepInEx"))?;
+    }
+    // Merge user mods
+    let user_dir = root.join("user");
+    if user_dir.exists() {
+        copy_dir_recursive(&user_dir, &output_dir.join("user"))?;
+    }
+    // Top-level dlls => BepInEx/plugins
+    let plugins_dir = output_dir.join("BepInEx").join("plugins");
+    create_dir_all(&plugins_dir)?;
+    if let Ok(entries) = fs::read_dir(&root) {
+        for entry in entries.filter_map(|e| e.ok()) {
+            let p = entry.path();
+            if p.is_file() && p.extension().and_then(|e| e.to_str()).map(|e| e.eq_ignore_ascii_case("dll")).unwrap_or(false) {
+                let target = plugins_dir.join(p.file_name().unwrap());
+                fs_copy(&p, &target)?;
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
+    if !dst.exists() { create_dir_all(dst)?; }
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let path = entry.path();
+        let target = dst.join(entry.file_name());
+        if path.is_dir() {
+            copy_dir_recursive(&path, &target)?;
+        } else {
+            if let Some(parent) = target.parent() { create_dir_all(parent)?; }
+            fs_copy(&path, &target)?; // overwrite
+        }
+    }
+    Ok(())
+}
 
 /// Get the latest compatible downloadable for the mods in `profile`
 ///
@@ -116,6 +218,10 @@ pub async fn upgrade(profile: &Profile) -> Result<()> {
     } else {
         println!("\n{}\n", "Downloading Mod Files".bold());
         download(profile.output_dir.clone(), to_download, to_install).await?;
+        // After downloading archives, extract them into SPT structure
+        if let Err(e) = extract_all_archives(&profile.output_dir) {
+            println!("{} Failed to extract some archives: {}", CROSS.red(), e);
+        }
     }
 
     if error {

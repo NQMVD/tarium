@@ -50,7 +50,7 @@ pub async fn add(
     override_profile: bool,
     filters: Vec<Filter>,
 ) -> Result<(Vec<String>, Vec<(String, Error)>)> {
-    dbg!("adding", &identifiers);
+    // Adding identifiers
     let mut gh_ids = Vec::new();
     let mut errors = Vec::new();
 
@@ -122,17 +122,28 @@ pub async fn github(
     }
 
     if let Some(download_files) = need_checks {
-        // Check if the repo is compatible
-        // NOAH: wtf does it even do??? i guess thats where the filters go
-        check::select_latest(
-            vec![download_files].iter(),
-            if override_profile {
-                profile.filters.clone()
-            } else {
-                [profile.filters.clone(), filters.clone()].concat()
-            },
-        )
-        .await?;
+        let applied_filters = if override_profile {
+            profile.filters.clone()
+        } else {
+            [profile.filters.clone(), filters.clone()].concat()
+        };
+
+        match check::select_latest(vec![download_files.clone()].iter(), applied_filters).await {
+            Ok(_) => { /* compatible */ }
+            Err(check::Error::FilterEmpty(empty)) => {
+                // If the only empty filters are Game Version filters and the metadata lacks versions, allow add.
+                let only_game_version = empty.iter().all(|f| f.starts_with("Game Version"));
+                let no_versions = download_files.game_versions.is_empty();
+                if only_game_version && no_versions {
+                    println!(
+                        "Warning: proceeding without game version match; release has no detectable SPT version tags."
+                    );
+                } else {
+                    return Err(check::Error::FilterEmpty(empty).into());
+                }
+            }
+            Err(e) => return Err(e.into()),
+        }
     }
 
     // Add it to the profile
@@ -200,7 +211,7 @@ async fn fetch_repo_releases_rest(owner: &str, repo: &str) -> Result<Metadata> {
                         Some(filtered_versions)
                     }
                 };
-                dbg!(&game_versions);
+                // found candidate game versions (pre cutoff / may be empty)
 
                 // DEV: temporarily cut off patch version here too
                 let game_versions = game_versions
@@ -214,7 +225,7 @@ async fn fetch_repo_releases_rest(owner: &str, repo: &str) -> Result<Metadata> {
                         }
                     })
                     .collect::<Vec<_>>();
-                dbg!(&game_versions);
+                // after trimming patch segments
 
                 all_metadata.push(Metadata::new(
                     release.name.as_ref().unwrap_or(&release.tag_name).clone(),
@@ -226,7 +237,7 @@ async fn fetch_repo_releases_rest(owner: &str, repo: &str) -> Result<Metadata> {
             }
         }
     }
-    dbg!("Fetched assets", &all_metadata);
+    // Assets fetched
 
     all_metadata.sort_by(|a, b| b.release_date.cmp(&a.release_date));
     let latest_release = all_metadata.first().cloned();
