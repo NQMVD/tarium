@@ -49,17 +49,34 @@ impl Mod {
                     _ => unreachable!(),
                 };
 
-                let index = super::check::select_latest(
-                    download_files.iter().map(|(m, _)| m),
-                    if self.override_filters {
-                        self.filters.clone()
-                    } else {
-                        profile_filters.extend(self.filters.clone());
-                        profile_filters
-                    },
-                )
-                .await?;
-                Ok(download_files.into_iter().nth(index).unwrap().1)
+                // Find the best candidate using filters
+                let mut best_candidate = None;
+                let filters = if self.override_filters {
+                    self.filters.clone()
+                } else {
+                    profile_filters.extend(self.filters.clone());
+                    profile_filters
+                };
+
+                // Check each candidate against all filters
+                for (metadata, download_data) in &download_files {
+                    let mut passes_all = true;
+                    for filter in &filters {
+                        if !filter.matches(metadata).await? {
+                            passes_all = false;
+                            break;
+                        }
+                    }
+                    if passes_all {
+                        best_candidate = Some(download_data);
+                        break; // Take the first (best) match since they're sorted by preference
+                    }
+                }
+
+                match best_candidate {
+                    Some(download_data) => Ok(download_data.clone()),
+                    None => Err(super::check::Error::NoCompatibleFiles.into()),
+                }
             }
         }
     }

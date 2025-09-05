@@ -68,15 +68,7 @@ pub async fn add(
         for (owner, name) in &gh_ids {
             match fetch_repo_releases_rest(owner, name).await {
                 Ok(metadata) => {
-                    repos_data.push(
-                        (
-                            (
-                                owner.clone(),
-                                name.clone(),
-                            ),
-                            metadata
-                        )
-                    );
+                    repos_data.push(((owner.clone(), name.clone()), metadata));
                 }
                 Err(err) => {
                     errors.push((format!("{}/{}", owner, name), err));
@@ -155,7 +147,6 @@ pub async fn github(
     Ok(())
 }
 
-
 /// Fetch repository releases using REST API instead of GraphQL to avoid authentication requirement
 async fn fetch_repo_releases_rest(owner: &str, repo: &str) -> Result<Metadata> {
     // Get all releases for the repository using REST API
@@ -190,7 +181,6 @@ async fn fetch_repo_releases_rest(owner: &str, repo: &str) -> Result<Metadata> {
         // Convert each asset to Metadata
         for asset in assets_page.items {
             if asset.name.ends_with(".zip") || asset.name.ends_with(".7z") {
-                
                 found_versions.push(extract_versions(asset.name.as_str()));
                 let game_versions = if found_versions.is_empty() {
                     None
@@ -198,7 +188,12 @@ async fn fetch_repo_releases_rest(owner: &str, repo: &str) -> Result<Metadata> {
                     // TODO: check if there 3.11 or 3.10 or these with patch versions in the name
                     found_versions.sort_by(|a, b| b.len().cmp(&a.len())); // longest first
                     found_versions.dedup();
-                    let filtered_versions = found_versions.clone().into_iter().flatten().filter(|v| is_spt_version(v)).collect::<Vec<_>>();
+                    let filtered_versions = found_versions
+                        .clone()
+                        .into_iter()
+                        .flatten()
+                        .filter(|v| is_spt_version(v))
+                        .collect::<Vec<_>>();
                     if filtered_versions.is_empty() {
                         None
                     } else {
@@ -207,12 +202,26 @@ async fn fetch_repo_releases_rest(owner: &str, repo: &str) -> Result<Metadata> {
                 };
                 dbg!(&game_versions);
 
+                // DEV: temporarily cut off patch version here too
+                let game_versions = game_versions
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|v| {
+                        if let Some(pos) = v.rfind('.') {
+                            v[..pos].to_string()
+                        } else {
+                            v
+                        }
+                    })
+                    .collect::<Vec<_>>();
+                dbg!(&game_versions);
+
                 all_metadata.push(Metadata::new(
                     release.name.as_ref().unwrap_or(&release.tag_name).clone(),
                     release.body.as_ref().cloned().unwrap_or_default(),
                     asset.name.clone(),
                     release.created_at.as_ref().cloned().unwrap_or_default(),
-                    game_versions,
+                    Some(game_versions),
                 ));
             }
         }

@@ -119,7 +119,7 @@ pub fn from_gh_releases(
                         Some(filtered_versions)
                     }
                 };
-                dbg!(&game_versions);
+                // game_versions collected from release/asset names
                 
                 (
                     Metadata::new(

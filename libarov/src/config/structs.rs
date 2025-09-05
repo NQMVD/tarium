@@ -60,16 +60,32 @@ pub struct Profile {
 impl Profile {
     /// A simple constructor that automatically deals with converting to filters
     pub fn new(name: String, output_dir: PathBuf, game_versions: Vec<String>, strict: bool) -> Self {
+    // cutoff patch segment from supplied versions (remove patch component)
+        let game_versions = game_versions
+            .into_iter()
+            .map(|v| {
+                // cutoff patch segment by removing patch version at last dot
+                if let Some(pos) = v.rfind('.') {
+                    // need String here
+                    v[..pos].to_string()
+                } else {
+                    v
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let filters = vec![
+            if strict {
+                Filter::GameVersionStrict(game_versions)
+            } else {
+                Filter::GameVersionMinor(game_versions)
+            },
+        ];
+
         Self {
             name,
             output_dir,
-            filters: vec![
-                if strict {
-                    Filter::GameVersionStrict(game_versions)
-                } else {
-                    Filter::GameVersionMinor(game_versions)
-                },
-                ],
+            filters,
             mods: vec![],
             // game_version: None,
         }

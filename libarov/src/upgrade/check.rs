@@ -1,10 +1,10 @@
 use super::Metadata;
 use crate::{
     config::filters::{Filter, ReleaseChannel},
-    iter_ext::{IterExt, IterExtPositions},
+    iter_ext::IterExt,
 };
 use regex::Regex;
-use std::{collections::HashSet, sync::OnceLock};
+use std::sync::OnceLock;
 
 #[derive(thiserror::Error, Debug)]
 #[error(transparent)]
@@ -12,8 +12,8 @@ pub enum Error {
     FilenameRegex(#[from] regex::Error),
     #[error("The following filter(s) were empty: {}", _0.iter().display(", "))]
     FilterEmpty(Vec<String>),
-    #[error("Failed to find a compatible combination")]
-    IntersectFailure,
+    #[error("No compatible files found after applying all filters")]
+    NoCompatibleFiles,
 }
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -28,7 +28,7 @@ pub async fn get_version_groups() -> Result<&'static Vec<Vec<String>>> {
     } else {
         // TODO: port this???
         // let versions = MODRINTH_API.tag_list_game_versions().await?;
-        let mut v = vec![vec![]];
+        let v = vec![vec![]];
         // for version in versions {
         //     if version.version_type == GameVersionType::Release {
         //         // Push the version to the latest group
@@ -46,17 +46,23 @@ pub async fn get_version_groups() -> Result<&'static Vec<Vec<String>>> {
 }
 
 impl Filter {
-    /// Returns the indices of `download_files` that have successfully filtered through `self`
-    ///
-    /// This function fails if getting version groups fails, or the regex files to parse.
-    pub async fn filter(
-        &self,
-        download_files: impl Iterator<Item = (usize, &Metadata)> + Clone,
-    ) -> Result<HashSet<usize>> {
+    /// Returns whether the given metadata passes through this filter
+    pub async fn matches(&self, metadata: &Metadata) -> Result<bool> {
         Ok(match self {
-            Filter::GameVersionStrict(versions) => download_files
-                .positions(|f| versions.iter().any(|vc| f.game_versions.contains(vc)))
-                .collect_hashset(),
+            Filter::GameVersionStrict(versions) => {
+                versions.iter().any(|v| {
+                    if metadata.game_versions.contains(v) { return true; }
+                    // Accept minor-only vs minor.x equivalence
+                    if v.ends_with(".x") {
+                        let trimmed = &v[..v.len()-2];
+                        if metadata.game_versions.contains(&trimmed.to_string()) { return true; }
+                    } else if v.chars().filter(|c| *c == '.').count() == 1 { // major.minor form
+                        let with_x = format!("{v}.x");
+                        if metadata.game_versions.contains(&with_x) { return true; }
+                    }
+                    false
+                })
+            }
 
             Filter::GameVersionMinor(versions) => {
                 let mut final_versions = vec![];
@@ -65,117 +71,107 @@ impl Filter {
                         final_versions.extend(group.clone());
                     }
                 }
-
-                download_files
-                    .positions(|f| final_versions.iter().any(|vc| f.game_versions.contains(vc)))
-                    .collect_hashset()
+                final_versions.iter().any(|v| {
+                    if metadata.game_versions.contains(v) { return true; }
+                    if v.ends_with(".x") {
+                        let trimmed = &v[..v.len()-2];
+                        if metadata.game_versions.contains(&trimmed.to_string()) { return true; }
+                    } else if v.chars().filter(|c| *c == '.').count() == 1 {
+                        let with_x = format!("{v}.x");
+                        if metadata.game_versions.contains(&with_x) { return true; }
+                    }
+                    false
+                })
             }
 
-            Filter::ReleaseChannel(channel) => download_files
-                .positions(|f| match channel {
-                    ReleaseChannel::Alpha => true,
-                    ReleaseChannel::Beta => {
-                        f.channel == ReleaseChannel::Beta || f.channel == ReleaseChannel::Release
-                    }
-                    ReleaseChannel::Release => f.channel == ReleaseChannel::Release,
-                })
-                .collect_hashset(),
+            Filter::ReleaseChannel(channel) => match channel {
+                ReleaseChannel::Alpha => true,
+                ReleaseChannel::Beta => {
+                    metadata.channel == ReleaseChannel::Beta || metadata.channel == ReleaseChannel::Release
+                }
+                ReleaseChannel::Release => metadata.channel == ReleaseChannel::Release,
+            },
 
             Filter::Filename(regex) => {
                 let regex = Regex::new(regex)?;
-                download_files
-                    .positions(|f| regex.is_match(&f.filename))
-                    .collect_hashset()
+                regex.is_match(&metadata.filename)
             }
 
             Filter::Title(regex) => {
                 let regex = Regex::new(regex)?;
-                download_files
-                    .positions(|f| regex.is_match(&f.title))
-                    .collect_hashset()
+                regex.is_match(&metadata.title)
             }
 
             Filter::Description(regex) => {
                 let regex = Regex::new(regex)?;
-                download_files
-                    .positions(|f| regex.is_match(&f.description))
-                    .collect_hashset()
+                regex.is_match(&metadata.description)
             }
         })
+    }
+
+    /// Filters an iterator of metadata, returning only items that pass the filter
+    pub async fn filter<'a>(
+        &self,
+        metadata_iter: impl Iterator<Item = &'a Metadata> + 'a,
+    ) -> Result<impl Iterator<Item = &'a Metadata> + 'a> {
+        // For now, collect into a Vec since we need to handle async matching
+        // A more sophisticated approach would use a custom iterator
+        let mut results = Vec::new();
+        for metadata in metadata_iter {
+            if self.matches(metadata).await? {
+                results.push(metadata);
+            }
+        }
+        Ok(results.into_iter())
     }
 }
 
-// NOAH: uhhh, huh?! what is all this?
-/// Assumes that the provided `download_files` are sorted in the order of preference (e.g. chronological)
-pub async fn select_latest(
-    download_files: impl Iterator<Item = &Metadata> + Clone,
+/// Apply multiple filters and select the best matching metadata from the provided candidates.
+/// The candidates should be sorted in order of preference (e.g., chronological, newest first).
+/// 
+/// Returns the selected metadata that passes all filters, or an error if no candidates pass.
+pub async fn select_latest<'a>(
+    candidates: impl Iterator<Item = &'a Metadata> + Clone,
     filters: Vec<Filter>,
-) -> Result<usize> {
-    let mut filter_results = vec![];
-    let run_last = vec![];
+) -> Result<&'a Metadata> {
+    let candidates_vec: Vec<&Metadata> = candidates.collect();
+    
+    if candidates_vec.is_empty() {
+        return Err(Error::NoCompatibleFiles);
+    }
 
+    // Check which filters produce empty results first
+    let mut empty_filters = Vec::new();
     for filter in &filters {
-        filter_results.push((
-            filter,
-            filter.filter(download_files.clone().enumerate()).await?,
-        ));
-    }
-
-    let empty_filtrations = filter_results
-        .iter()
-        .chain(run_last.iter())
-        .filter_map(|(filter, indices)| {
-            if indices.is_empty() {
-                Some(filter.to_string())
-            } else {
-                None
+        let mut has_match = false;
+        for &candidate in &candidates_vec {
+            if filter.matches(candidate).await? {
+                has_match = true;
+                break;
             }
-        })
-        .collect_vec();
-    if !empty_filtrations.is_empty() {
-        return Err(Error::FilterEmpty(empty_filtrations));
-    }
-
-    // Get the indices of the filtrations
-    let mut filter_results = filter_results.into_iter().map(|(_, set)| set);
-
-    // Intersect all the index_sets by folding the HashSet::intersection method
-    // Ref: https://www.reddit.com/r/rust/comments/5v35l6/intersection_of_more_than_two_sets
-    // Here we're getting the non-ModLoaderPrefer indices first
-    let final_indices = filter_results
-        .next()
-        .map(|set_1| {
-            filter_results.fold(set_1, |set_a, set_b| {
-                set_a.intersection(&set_b).copied().collect_hashset()
-            })
-        })
-        .unwrap_or_default();
-
-    let download_files = download_files.into_iter().enumerate().filter_map(|(i, f)| {
-        if final_indices.contains(&i) {
-            Some((i, f))
-        } else {
-            None
         }
-    });
-
-    let mut filter_results = vec![];
-    for (filter, _) in run_last {
-        filter_results.push(filter.filter(download_files.clone()).await?)
+        if !has_match {
+            empty_filters.push(filter.to_string());
+        }
     }
-    let mut filter_results = filter_results.into_iter();
 
-    let final_index = filter_results
-        .next()
-        .and_then(|set_1| {
-            filter_results
-                .fold(set_1, |set_a, set_b| {
-                    set_a.intersection(&set_b).copied().collect_hashset()
-                })
-                .into_iter()
-                .min()
-        })
-        .ok_or(Error::IntersectFailure)?;
+    if !empty_filters.is_empty() {
+        return Err(Error::FilterEmpty(empty_filters));
+    }
 
-    Ok(final_index)
+    // Find the first candidate that passes all filters
+    for &candidate in &candidates_vec {
+        let mut passes_all = true;
+        for filter in &filters {
+            if !filter.matches(candidate).await? {
+                passes_all = false;
+                break;
+            }
+        }
+        if passes_all {
+            return Ok(candidate);
+        }
+    }
+
+    Err(Error::NoCompatibleFiles)
 }

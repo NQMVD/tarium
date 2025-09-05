@@ -17,7 +17,7 @@ use parking_lot::Mutex;
 use std::{
     fs::read_dir,
     mem::take,
-    sync::{mpsc, Arc},
+    sync::Arc,
     time::Duration,
 };
 use tokio::task::JoinSet;
@@ -29,12 +29,6 @@ use tokio::task::JoinSet;
 pub async fn get_platform_downloadables(profile: &Profile) -> Result<(Vec<DownloadData>, bool)> {
     let progress_bar = Arc::new(Mutex::new(ProgressBar::new(0).with_style(STYLE_NO.clone())));
     let mut tasks = JoinSet::new();
-    let mut done_mods = Vec::new();
-    let (mod_sender, mod_rcvr) = mpsc::channel();
-
-    // Wrap it again in an Arc so that I can count the references to it,
-    // because I cannot drop the main thread's sender due to the recursion
-    let mod_sender = Arc::new(mod_sender);
 
     println!("{}\n", "Determining the Latest Compatible Versions".bold());
     progress_bar
@@ -48,95 +42,49 @@ pub async fn get_platform_downloadables(profile: &Profile) -> Result<(Vec<Downlo
         .unwrap_or(20)
         .clamp(20, 50);
 
+    // Spawn a task per mod (dependency expansion can be re-added later if needed)
     for mod_ in profile.mods.clone() {
-        mod_sender.send(mod_)?;
-    }
+        progress_bar.lock().inc_length(1);
+        let filters = profile.filters.clone();
+        let progress_bar = Arc::clone(&progress_bar);
+        tasks.spawn(async move {
+            let permit = SEMAPHORE.get_or_init(default_semaphore).acquire().await?;
+            let result = mod_.fetch_download_file(filters).await;
+            drop(permit);
 
-    let mut initial = true;
-
-    // A race condition exists where if the last task drops its sender before this thread receives the message,
-    // that particular message will get ignored. I used the ostrich algorithm to solve this.
-
-    // `initial` accounts for the edge case where at first,
-    // no tasks have been spawned yet but there are messages in the channel
-    while Arc::strong_count(&mod_sender) > 1 || initial {
-        if let Ok(mod_) = mod_rcvr.try_recv() {
-            initial = false;
-
-            if done_mods.contains(&mod_.identifier) {
-                continue;
-            }
-
-            done_mods.push(mod_.identifier.clone());
-            progress_bar.lock().inc_length(1);
-
-            let filters = profile.filters.clone();
-            let dep_sender = Arc::clone(&mod_sender);
-            let progress_bar = Arc::clone(&progress_bar);
-
-            tasks.spawn(async move {
-                let permit = SEMAPHORE.get_or_init(default_semaphore).acquire().await?;
-
-                let result = mod_.fetch_download_file(filters).await;
-
-                drop(permit);
-
-                progress_bar.lock().inc(1);
-                match result {
-                    Ok(mut download_file) => {
-                        progress_bar.lock().println(format!(
-                            "{} {:pad_len$}  {}",
-                            TICK.clone(),
-                            mod_.name,
-                            download_file.filename().dimmed()
-                        ));
-                        // for dep in take(&mut download_file.dependencies) {
-                        //     dep_sender.send(Mod::new(
-                        //         format!(
-                        //             "Dependency: {}",
-                        //             match &dep {
-                        //                 ModIdentifier::CurseForgeProject(id) => id.to_string(),
-                        //                 _ => unreachable!(),
-                        //             }
-                        //         ),
-                        //         match dep {
-                        //             ModIdentifier::PinnedModrinthProject(id, _) => {
-                        //                 ModIdentifier::ModrinthProject(id)
-                        //             }
-                        //             _ => dep,
-                        //         },
-                        //         vec![],
-                        //         false,
-                        //     ))?;
-                        // }
-                        Ok(Some(download_file))
-                    }
-                    Err(err) => {
-                        progress_bar.lock().println(format!(
-                            "{}",
-                            format!("{CROSS} {:pad_len$}  {err}", mod_.name).red()
-                        ));
-                        Ok(None)
-                    }
+            progress_bar.lock().inc(1);
+            match result {
+                Ok(download_file) => {
+                    progress_bar.lock().println(format!(
+                        "{} {:pad_len$}  {}",
+                        TICK.clone(),
+                        mod_.name,
+                        download_file.filename().dimmed()
+                    ));
+                    Ok(Some(download_file))
                 }
-            });
-        }
+                Err(err) => {
+                    progress_bar.lock().println(format!(
+                        "{}",
+                        format!("{CROSS} {:pad_len$}  {err}", mod_.name).red()
+                    ));
+                    Ok(None)
+                }
+            }
+        });
     }
 
-    Arc::try_unwrap(progress_bar)
-        .map_err(|_| anyhow!("Failed to run threads to completion"))?
-        .into_inner()
-        .finish_and_clear();
-
-    let tasks = tasks
+    // Wait for all tasks to finish before clearing the bar
+    let task_results = tasks
         .join_all()
         .await
         .into_iter()
         .collect::<Result<Vec<_>>>()?;
 
-    let error = tasks.iter().any(Option::is_none);
-    let to_download = tasks.into_iter().flatten().collect();
+    progress_bar.lock().finish_and_clear();
 
+    let error = task_results.iter().any(Option::is_none);
+    let to_download = task_results.into_iter().flatten().collect();
     Ok((to_download, error))
 }
 
