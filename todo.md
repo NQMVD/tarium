@@ -6,7 +6,8 @@
 - [x] fix 7z? download fails for TommySoucy/MoreCheckmarks
     - [x] Add 7z extraction (e.g. sevenz-rust)
 
-- [ ] fix mods not being deletable by user with admin right in explorer???!!
+- [x] fix mods not being deletable by user with admin right in explorer???!!
+    - was just a readonly thing of .part files?
 
 
 # current

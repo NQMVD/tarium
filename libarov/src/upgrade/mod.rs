@@ -192,8 +192,9 @@ impl DownloadData {
         let mut temp_file = BufWriter::with_capacity(
             size,
             OpenOptions::new()
-                .append(true)
+                .write(true)
                 .create(true)
+                .truncate(true)
                 .open(&temp_file_path)?,
         );
 
@@ -204,7 +205,29 @@ impl DownloadData {
             update(chunk.len());
         }
         temp_file.flush()?;
-        rename(temp_file_path, out_file_path)?;
+        rename(temp_file_path, &out_file_path)?;
+
+        #[cfg(windows)]
+        {
+            if let Ok(meta) = std::fs::metadata(&out_file_path) {
+                if meta.permissions().readonly() {
+                    let mut perms = meta.permissions();
+                    perms.set_readonly(false);
+                    let _ = std::fs::set_permissions(&out_file_path, perms);
+                }
+            }
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Ok(meta) = std::fs::metadata(&out_file_path) {
+                let mut perms = meta.permissions();
+                // rw-r--r--
+                let _ = perms.set_mode(0o644);
+                let _ = std::fs::set_permissions(&out_file_path, perms);
+            }
+        }
+
         Ok((size, filename))
     }
 

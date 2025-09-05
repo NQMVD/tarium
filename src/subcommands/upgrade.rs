@@ -25,6 +25,26 @@ use std::{fs::{self, File, create_dir_all, copy as fs_copy}, path::{Path, PathBu
 use zip::ZipArchive;
 use sevenz_rust::decompress_file;
 
+#[cfg(windows)]
+fn normalize_permissions(path: &Path) {
+    if let Ok(meta) = std::fs::metadata(path) {
+        if meta.permissions().readonly() {
+            let mut perms = meta.permissions();
+            perms.set_readonly(false);
+            let _ = std::fs::set_permissions(path, perms);
+        }
+    }
+}
+#[cfg(unix)]
+fn normalize_permissions(path: &Path) {
+    use std::os::unix::fs::PermissionsExt;
+    if let Ok(meta) = std::fs::metadata(path) {
+        let mut perms = meta.permissions();
+        let _ = perms.set_mode(0o644);
+        let _ = std::fs::set_permissions(path, perms);
+    }
+}
+
 fn extract_all_archives(output_dir: &Path) -> Result<()> {
     for entry in fs::read_dir(output_dir)? {
         let entry = entry?;
@@ -59,6 +79,16 @@ fn extract_7z(archive_path: &Path, output_dir: &Path) -> Result<()> {
     if temp_dir.exists() { fs::remove_dir_all(&temp_dir)?; }
     create_dir_all(&temp_dir)?;
     decompress_file(archive_path, &temp_dir)?;
+    // quick permission normalization on extracted tree
+    fn walk_and_normalize(p: &Path) {
+        if let Ok(rd) = std::fs::read_dir(p) {
+            for e in rd.flatten() {
+                let path = e.path();
+                if path.is_dir() { walk_and_normalize(&path); } else { normalize_permissions(&path); }
+            }
+        }
+    }
+    walk_and_normalize(&temp_dir);
     install_extracted(&temp_dir, output_dir)?;
     fs::remove_dir_all(&temp_dir)?;
     Ok(())
@@ -80,6 +110,7 @@ fn extract_zip(zip_path: &Path, output_dir: &Path) -> Result<()> {
             if let Some(parent) = outpath.parent() { create_dir_all(parent)?; }
             let mut outfile = File::create(&outpath)?;
             std::io::copy(&mut file, &mut outfile)?;
+            normalize_permissions(&outpath);
         }
     }
     install_extracted(&temp_dir, output_dir)?;
@@ -116,6 +147,7 @@ fn install_extracted(temp_dir: &Path, output_dir: &Path) -> Result<()> {
             if p.is_file() && p.extension().and_then(|e| e.to_str()).map(|e| e.eq_ignore_ascii_case("dll")).unwrap_or(false) {
                 let target = plugins_dir.join(p.file_name().unwrap());
                 fs_copy(&p, &target)?;
+                normalize_permissions(&target);
             }
         }
     }
@@ -134,6 +166,7 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
         } else {
             if let Some(parent) = target.parent() { create_dir_all(parent)?; }
             fs_copy(&path, &target)?; // overwrite
+            normalize_permissions(&target);
         }
     }
     Ok(())
