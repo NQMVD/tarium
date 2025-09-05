@@ -23,6 +23,7 @@ use std::{
 use tokio::task::JoinSet;
 use std::{fs::{self, File, create_dir_all, copy as fs_copy}, path::{Path, PathBuf}};
 use zip::ZipArchive;
+use sevenz_rust::decompress_file;
 
 fn extract_all_archives(output_dir: &Path) -> Result<()> {
     for entry in fs::read_dir(output_dir)? {
@@ -39,13 +40,27 @@ fn extract_all_archives(output_dir: &Path) -> Result<()> {
                         }
                     }
                     "7z" => {
-                        println!("{} 7z extraction not yet supported: {}", CROSS.red(), path.file_name().unwrap_or_default().to_string_lossy());
+                        if let Err(e) = extract_7z(&path, output_dir) {
+                            println!("{} Failed extracting {}: {}", CROSS.red(), path.file_name().unwrap_or_default().to_string_lossy(), e);
+                        } else {
+                            println!("{} Extracted        {}", TICK.clone(), path.file_name().unwrap_or_default().to_string_lossy().dimmed());
+                        }
                     }
                     _ => {}
                 }
             }
         }
     }
+    Ok(())
+}
+
+fn extract_7z(archive_path: &Path, output_dir: &Path) -> Result<()> {
+    let temp_dir = output_dir.join(".extract_tmp").join(archive_path.file_stem().unwrap_or_default());
+    if temp_dir.exists() { fs::remove_dir_all(&temp_dir)?; }
+    create_dir_all(&temp_dir)?;
+    decompress_file(archive_path, &temp_dir)?;
+    install_extracted(&temp_dir, output_dir)?;
+    fs::remove_dir_all(&temp_dir)?;
     Ok(())
 }
 

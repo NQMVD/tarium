@@ -71,7 +71,7 @@ impl Mod {
                 match best_candidate {
                     Some(download_data) => Ok(download_data.clone()),
                     None => {
-                        // Fallback: if every candidate has empty game_versions and the only
+                        // Fallback 1: if every candidate has empty game_versions and the only
                         // failing filters are GameVersion filters, allow the newest asset.
                         let all_empty_versions = download_files
                             .iter()
@@ -80,13 +80,29 @@ impl Mod {
                         if all_empty_versions && has_game_version_filters {
                             if let Some((metadata, dd)) = download_files.first() {
                                 println!("Warning: no version tags found in release '{}'; using latest asset without version filtering.", metadata.title);
-                                Ok(dd.clone())
+                                return Ok(dd.clone());
                             } else {
-                                Err(super::check::Error::NoCompatibleFiles.into())
+                                return Err(super::check::Error::NoCompatibleFiles.into());
                             }
-                        } else {
-                            Err(super::check::Error::NoCompatibleFiles.into())
                         }
+
+                        // Fallback 2: allow an asset where all NON version filters pass, even if
+                        // version filters fail or metadata has no version list (common for .7z assets).
+                        'candidate_loop: for (metadata, dd) in &download_files {
+                            for filter in &filters {
+                                match filter {
+                                    Filter::GameVersionStrict(_) | Filter::GameVersionMinor(_) => {
+                                        // ignore version filters in this fallback
+                                    }
+                                    _ => if !filter.matches(metadata).await? { continue 'candidate_loop; }
+                                }
+                            }
+                            // All non-version filters passed
+                            println!("Warning: bypassing game version filter; using asset '{}' without matching version tags.", metadata.filename);
+                            return Ok(dd.clone());
+                        }
+
+                        Err(super::check::Error::NoCompatibleFiles.into())
                     }
                 }
             }

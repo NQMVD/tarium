@@ -1,4 +1,15 @@
+# high priority
 
+- [ ] add logging for when filters couldnt match anything, or generally more logging...
+    - [ ] take custom logging i made from needs
+
+- [x] fix 7z? download fails for TommySoucy/MoreCheckmarks
+    - [x] Add 7z extraction (e.g. sevenz-rust)
+
+- [ ] fix mods not being deletable by user with admin right in explorer???!!
+
+
+# current
 - [x] fix fucking github lol
     - the problem is that the graphql endpoint requires auth request, unlike the rest api which has the 60/h free...x
     - [ ] dedupe the get gh releases+assets thingy
@@ -8,22 +19,25 @@
     - [x] support for checking two dirs
 
 - [ ] replace inquire with another one that doesnt suck on windows
-    - [ ] try requestty
+    - [ ] try requestty - looks nice too
         - [ ] try its progressbars, if they suck too, remove em
     - [ ] or askr (newer and not so sophisticated)
 
 - [ ] remove scan command as its not gonna work with dragged-in folders...
 
 - [ ] use SPT\user\cache for downloads?
-
-- [ ] hook up the hub as api?
+- [ ] move processed archives to output_dir/.old after successful extraction to reduce clutter.
 
 - [ ] fix game versions filter bullshit somehow
+    - [ ] somewhat fixed, selection algo is better for sure
 
 - [ ] after extracting and moving mods, the ones in user/mods should get the package.json data checked for addition check for game version compatibility
 
 - [ ] downloaded zips should be in a subfolder called mod_zips
 
-- [ ] add logging for when filters couldnt match anything, or generally more logging...
+- [ ] check if theres an option to force override mods, full redownload, full replace in mods folders
 
-- [ ] fix mods not being deletable by user with admin right in explorer???!!
+
+# future
+
+- [ ] hook up the hub as api?

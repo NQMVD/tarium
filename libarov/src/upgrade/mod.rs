@@ -104,40 +104,58 @@ pub fn from_gh_releases(
                 found_versions.push(extract_versions(release_name.as_str()));
             }
 
-            release.assets.into_iter().map(move |asset| {
-                found_versions.push(extract_versions(asset.name.as_str()));
-                let game_versions = if found_versions.is_empty() {
-                    None
-                } else {
-                    // TODO: check if there 3.11 or 3.10 or these with patch versions in the name
-                    found_versions.sort_by(|a, b| b.len().cmp(&a.len())); // longest first
-                    found_versions.dedup();
-                    let filtered_versions = found_versions.clone().into_iter().flatten().filter(|v| is_spt_version(v)).collect::<Vec<_>>();
-                    if filtered_versions.is_empty() {
+            release
+                .assets
+                .into_iter()
+                // Only consider archive assets we can process
+                .filter(|asset| asset.name.ends_with(".zip") || asset.name.ends_with(".7z"))
+                .map(move |asset| {
+                    found_versions.push(extract_versions(asset.name.as_str()));
+                    let game_versions = if found_versions.is_empty() {
                         None
                     } else {
-                        Some(filtered_versions)
-                    }
-                };
-                // game_versions collected from release/asset names
-                
-                (
-                    Metadata::new(
-                        release.name.clone().unwrap_or_default(),
-                        release.body.clone().unwrap_or_default(),
-                        asset.name.clone(),
-                        release.published_at.unwrap_or_else(Utc::now),
-                        game_versions,
-                    ),
-                    DownloadData {
-                        download_url: asset.browser_download_url,
-                        output: asset.name.into(),
-                        length: asset.size as usize,
-                        dependencies: Vec::new(),
-                        conflicts: Vec::new(),
-                    },
-                )
-            })
+                        found_versions.sort_by(|a, b| b.len().cmp(&a.len())); // longest first
+                        found_versions.dedup();
+                        let filtered_versions = found_versions
+                            .clone()
+                            .into_iter()
+                            .flatten()
+                            .filter(|v| is_spt_version(v))
+                            .collect::<Vec<_>>();
+                        if filtered_versions.is_empty() {
+                            None
+                        } else {
+                            // Normalize to major.minor by trimming patch/wildcard segment
+                            let normalized = filtered_versions
+                                .into_iter()
+                                .map(|v| {
+                                    if v.matches('.').count() == 2 {
+                                        // major.minor.patch or major.minor.x
+                                        if let Some(pos) = v.rfind('.') { v[..pos].to_string() } else { v }
+                                    } else { v }
+                                })
+                                .collect::<Vec<_>>();
+                            Some(normalized)
+                        }
+                    };
+
+                    (
+                        Metadata::new(
+                            release.name.clone().unwrap_or_default(),
+                            release.body.clone().unwrap_or_default(),
+                            asset.name.clone(),
+                            release.published_at.unwrap_or_else(Utc::now),
+                            game_versions,
+                        ),
+                        DownloadData {
+                            download_url: asset.browser_download_url,
+                            output: asset.name.into(),
+                            length: asset.size as usize,
+                            dependencies: Vec::new(),
+                            conflicts: Vec::new(),
+                        },
+                    )
+                })
         })
         .collect_vec()
 }
