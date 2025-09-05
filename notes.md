@@ -16,12 +16,9 @@ SPT
                 - "sptVersion": ">=3.11.2 <3.12.0",
                 - "dependencies": { } not in use?
 
-- BAK (mine)
+- BAK or .old ?
     - BepInEx ...
     - user ...
-
-why do we get a list of metadata(assets?)???
-to check all if they match the game version?
 
 
 changelog and versions:
@@ -46,7 +43,7 @@ Artem 2.1.2:
 - no github lol
 
 MOAR + Bagels - Ultra lite spawn mod 3.1.6:
-- Andrewgdewar / MOAR-Client
+- Andrewgdewar/MOAR-Client
 - no releases on github
 
 Algorithmic Level Progression 5.5.0-Beta:
