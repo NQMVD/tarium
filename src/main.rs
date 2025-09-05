@@ -88,7 +88,7 @@ fn main() -> ExitCode {
     if let Err(e) = logging::setup_logger(cli.verbosity) {
         eprintln!("failed to init logger: {e}");
     } else {
-        debug!("logger initialised");
+        info!("logger initialised");
     }
 
     let mut builder = tokio::runtime::Builder::new_multi_thread();
@@ -171,7 +171,7 @@ async fn actual_main(mut cli_app: Tarium) -> Result<()> {
                 libarov::PROJECT_DIRS.config_dir().join("config.json")
             }
         });
-    debug!(config_path:debug; "Resolved config path");
+    info!(config_path:debug; "Resolved config path");
 
     // Handle old configs which may be in a different path
     if !config_path.exists() && old_default_config_path.exists() {
@@ -180,13 +180,13 @@ async fn actual_main(mut cli_app: Tarium) -> Result<()> {
     }
 
     let mut config = config::read_config(config_path)?;
-    debug!("Loaded config with {} profiles", config.profiles.len());
+    info!("Loaded config with {} profiles", config.profiles.len());
 
     // TODO: this needs a fucking rework holy shit
     let mut did_add_fail = false;
 
     // Run function(s) based on the sub(sub)command to be executed
-    debug!(SCOPE = "clap", subcommand:debug = cli_app.subcommand; "Executing");
+    info!(SCOPE = "clap", subcommand:debug = cli_app.subcommand; "Executing");
     match cli_app.subcommand {
         SubCommands::Complete { .. } | SubCommands::Profiles => {
             unreachable!();
@@ -355,7 +355,7 @@ async fn actual_main(mut cli_app: Tarium) -> Result<()> {
             .sort_unstable_by_key(|mod_| mod_.name.to_lowercase());
     });
     // Update config file with possibly edited config
-    debug!("Persisting config changes to {:?}", config_path);
+    info!("Persisting config changes to {:?}", config_path);
     config::write_config(config_path, &config)?;
 
     if did_add_fail {

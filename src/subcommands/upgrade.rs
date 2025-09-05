@@ -22,6 +22,7 @@ use std::{
 };
 use tokio::task::JoinSet;
 use std::{fs::{self, File, create_dir_all, copy as fs_copy}, path::{Path, PathBuf}};
+use std::collections::HashSet;
 use zip::ZipArchive;
 use sevenz_rust::decompress_file;
 
@@ -40,12 +41,56 @@ fn normalize_permissions(path: &Path) {
     use std::os::unix::fs::PermissionsExt;
     if let Ok(meta) = std::fs::metadata(path) {
         let mut perms = meta.permissions();
-        let _ = perms.set_mode(0o644);
+        // Directories need execute bit; detect dir
+        if path.is_dir() {
+            let _ = perms.set_mode(0o755);
+        } else {
+            let _ = perms.set_mode(0o644);
+        }
         let _ = std::fs::set_permissions(path, perms);
     }
 }
 
+/// Normalize the permissions of all files and directories in a directory tree.
+fn normalize_tree(root: &Path) {
+    if !root.exists() { return; }
+    if root.is_dir() {
+        normalize_permissions(root);
+        if let Ok(rd) = std::fs::read_dir(root) {
+            for e in rd.flatten() { normalize_tree(&e.path()); }
+        }
+    } else {
+        normalize_permissions(root);
+    }
+}
+
+/// Move a processed archive to the archive store.
+fn move_processed_archive(from: &Path, archive_store: &Path) -> Result<()> {
+    let target = archive_store.join(from.file_name().unwrap_or_default());
+    if target.exists() {
+        let _ = fs::remove_file(&target); // best-effort remove existing
+    }
+    match fs::rename(from, &target) {
+        Ok(_) => Ok(()),
+        Err(_) => {
+            // Fallback: copy then delete original
+            fs_copy(from, &target)?;
+            fs::remove_file(from)?;
+            normalize_permissions(&target);
+            Ok(())
+        }
+    }
+}
+
 fn extract_all_archives(output_dir: &Path) -> Result<()> {
+    ensure_required_dirs(output_dir)?;
+    let archive_store = output_dir.join("MODS");
+    if !archive_store.exists() {
+        if let Err(e) = create_dir_all(&archive_store) {
+            println!("{} Failed creating MODS dir: {}", CROSS.red(), e);
+        }
+    }
+
     for entry in fs::read_dir(output_dir)? {
         let entry = entry?;
         let path = entry.path();
@@ -56,14 +101,22 @@ fn extract_all_archives(output_dir: &Path) -> Result<()> {
                         if let Err(e) = extract_zip(&path, output_dir) {
                             println!("{} Failed extracting {}: {}", CROSS.red(), path.file_name().unwrap_or_default().to_string_lossy(), e);
                         } else {
-                            println!("{} Extracted        {}", TICK.clone(), path.file_name().unwrap_or_default().to_string_lossy().dimmed());
+                            if let Err(e) = move_processed_archive(&path, &archive_store) {
+                                println!("{} Extracted (move failed: {}) {}", CROSS.red(), e, path.file_name().unwrap_or_default().to_string_lossy());
+                            } else {
+                                println!("{} Extracted (moved) {}", TICK.clone(), path.file_name().unwrap_or_default().to_string_lossy().dimmed());
+                            }
                         }
                     }
                     "7z" => {
                         if let Err(e) = extract_7z(&path, output_dir) {
                             println!("{} Failed extracting {}: {}", CROSS.red(), path.file_name().unwrap_or_default().to_string_lossy(), e);
                         } else {
-                            println!("{} Extracted        {}", TICK.clone(), path.file_name().unwrap_or_default().to_string_lossy().dimmed());
+                            if let Err(e) = move_processed_archive(&path, &archive_store) {
+                                println!("{} Extracted (move failed: {}) {}", CROSS.red(), e, path.file_name().unwrap_or_default().to_string_lossy());
+                            } else {
+                                println!("{} Extracted (moved) {}", TICK.clone(), path.file_name().unwrap_or_default().to_string_lossy().dimmed());
+                            }
                         }
                     }
                     _ => {}
@@ -172,6 +225,23 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
     Ok(())
 }
 
+fn ensure_required_dirs(output_dir: &Path) -> Result<()> {
+    let required = [
+        output_dir.to_path_buf(),
+        output_dir.join("BepInEx").join("plugins"),
+        output_dir.join("user").join("mods"),
+        output_dir.join("MODS"),
+    ];
+    for dir in required {
+        if !dir.exists() {
+            if let Err(e) = create_dir_all(&dir) {
+                println!("{} Failed to create directory {}: {}", CROSS.red(), dir.display(), e);
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Get the latest compatible downloadable for the mods in `profile`
 ///
 /// If an error occurs with a resolving task, instead of failing immediately,
@@ -240,6 +310,7 @@ pub async fn get_platform_downloadables(profile: &Profile) -> Result<(Vec<Downlo
 }
 
 pub async fn upgrade(profile: &Profile) -> Result<()> {
+    ensure_required_dirs(&profile.output_dir)?;
     let (mut to_download, error) = get_platform_downloadables(profile).await?;
     let mut to_install = Vec::new();
     if profile.output_dir.join("user").exists() {
@@ -262,12 +333,15 @@ pub async fn upgrade(profile: &Profile) -> Result<()> {
         // Download directly to the output directory
         .map(|thing| thing.output = thing.filename().into())
         .for_each(drop); // Doesn't drop any data, just runs the iterator
+    // Always attempt extraction of any archives present (new or existing)
     if to_download.is_empty() && to_install.is_empty() {
         println!("\n{}", "All up to date!".bold());
+        if let Err(e) = extract_all_archives(&profile.output_dir) {
+            println!("{} Failed to extract some archives: {}", CROSS.red(), e);
+        }
     } else {
         println!("\n{}\n", "Downloading Mod Files".bold());
         download(profile.output_dir.clone(), to_download, to_install).await?;
-        // After downloading archives, extract them into SPT structure
         if let Err(e) = extract_all_archives(&profile.output_dir) {
             println!("{} Failed to extract some archives: {}", CROSS.red(), e);
         }

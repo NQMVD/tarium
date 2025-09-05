@@ -3,7 +3,7 @@ use libarov::{
     config::{filters::ProfileParameters as _, structs::Profile},
     iter_ext::IterExt as _,
 };
-use log::debug;
+use log::info;
 
 pub fn info(profile: &Profile, active: bool) {
     println!(
@@ -30,5 +30,5 @@ pub fn info(profile: &Profile, active: bool) {
             .unwrap_or_default(),
         profile.mods.len().to_string().yellow(),
     );
-    debug!(filters:debug = profile.filters; "Profile");
+    info!(filters:debug = profile.filters; "Profile");
 }
