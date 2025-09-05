@@ -7,7 +7,10 @@ use inquire::{
     Confirm, Select, Text,
 };
 use libarov::{
-    config::{filters::Filter, structs::{Config, Profile}},
+    config::{
+        filters::Filter,
+        structs::{Config, Profile},
+    },
     get_spt_dir,
     iter_ext::IterExt as _,
 };
@@ -35,7 +38,7 @@ pub async fn create(
                 "The provided output directory is not absolute, i.e. it is a relative path"
             );
 
-            Profile::new(name, output_dir, game_versions, false)
+            Profile::new(name, output_dir, game_versions, true)
         }
         (None, None, None) => {
             let mut selected_mods_dir = PathBuf::new();
@@ -47,7 +50,7 @@ pub async fn create(
                 check_output_directory(&dir).await?;
                 selected_mods_dir = dir;
             }
-            
+
             let profiles = config.profiles.clone();
             let name = Text::new("What should this profile be called?")
                 .with_validator(move |s: &str| {
@@ -61,15 +64,12 @@ pub async fn create(
                 })
                 .prompt()?;
 
-            Profile::new(
-                name,
-                selected_mods_dir,
-                pick_spt_versions(&[]).await?,
-                false,
-            )
+            Profile::new(name, selected_mods_dir, pick_spt_versions(&[]).await?, true)
         }
         _ => {
-            bail!("Provide the name, game version, and output directory options to create a profile")
+            bail!(
+                "Provide the name, game version, and output directory options to create a profile"
+            )
         }
     };
 
@@ -105,10 +105,7 @@ pub async fn create(
         };
     }
 
-    println!(
-        "{}",
-        "Done!".green()
-    );
+    println!("{}", "Done!".green());
     println!(
         "{}",
         "After adding your mods, remember to run `ferium upgrade` to download them!".yellow()

@@ -2,9 +2,12 @@ pub mod check;
 pub mod mod_downloadable;
 
 use crate::{
-    config::{filters::ReleaseChannel, structs::ModIdentifier}, extract_versions, is_spt_version, iter_ext::IterExt as _
+    config::{filters::ReleaseChannel, structs::ModIdentifier},
+    extract_versions, is_spt_version,
+    iter_ext::IterExt as _,
 };
 use chrono::{DateTime, Utc};
+use log::{debug, info};
 use octocrab::models::repos::{Asset as GHAsset, Release as GHRelease};
 use reqwest::{Client, Url};
 use std::{
@@ -131,8 +134,14 @@ pub fn from_gh_releases(
                                 .map(|v| {
                                     if v.matches('.').count() == 2 {
                                         // major.minor.patch or major.minor.x
-                                        if let Some(pos) = v.rfind('.') { v[..pos].to_string() } else { v }
-                                    } else { v }
+                                        if let Some(pos) = v.rfind('.') {
+                                            v[..pos].to_string()
+                                        } else {
+                                            v
+                                        }
+                                    } else {
+                                        v
+                                    }
                                 })
                                 .collect::<Vec<_>>();
                             Some(normalized)
@@ -187,7 +196,10 @@ impl DownloadData {
         let temp_file_path = out_file_path.with_extension("part");
         if let Some(up_dir) = out_file_path.parent() {
             create_dir_all(up_dir)?;
+            info!(SCOPE = "libarov::upgrade::download", dir:display = up_dir.display().to_string(); "ensured parent directory exists");
         }
+
+        debug!(SCOPE = "libarov::upgrade::download", path:display = temp_file_path.display(), size = size; "creating temp file");
 
         let mut temp_file = BufWriter::with_capacity(
             size,
@@ -198,6 +210,7 @@ impl DownloadData {
                 .open(&temp_file_path)?,
         );
 
+        info!(SCOPE = "libarov::upgrade::download", url = url.as_str(), size = size, filename = filename.as_str(); "starting download");
         let mut response = client.get(url).send().await?;
 
         while let Some(chunk) = response.chunk().await? {
@@ -205,8 +218,9 @@ impl DownloadData {
             update(chunk.len());
         }
         temp_file.flush()?;
+        debug!(SCOPE = "libarov::upgrade::download", from:display = temp_file_path.display().to_string(), to:display = out_file_path.display().to_string(); "renaming temp file to final");
         rename(temp_file_path, &out_file_path)?;
-
+        info!(SCOPE = "libarov::upgrade::download", path:display = out_file_path.display().to_string(), size = size; "download complete");
         #[cfg(windows)]
         {
             if let Ok(meta) = std::fs::metadata(&out_file_path) {
@@ -222,9 +236,14 @@ impl DownloadData {
             use std::os::unix::fs::PermissionsExt;
             if let Ok(meta) = std::fs::metadata(&out_file_path) {
                 let mut perms = meta.permissions();
+
                 // rw-r--r--
+
+                debug!(SCOPE = "libarov::upgrade::download", path:display = out_file_path.display(); "setting file mode 0o644");
+
                 let _ = perms.set_mode(0o644);
                 let _ = std::fs::set_permissions(&out_file_path, perms);
+                info!(SCOPE = "libarov::upgrade::download", path = out_file_path.display().to_string(); "permissions normalised (unix)");
             }
         }
 

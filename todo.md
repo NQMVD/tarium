@@ -1,10 +1,16 @@
 # high priority
 
+- [x] remove old code that moves all files to .old
+- [x] fix jar check in upgrade?!
+
 - [ ] add logging for when filters couldnt match anything, or generally more logging...
     - [x] take custom logging i made from needs
+    - [ ] added more logging when filtering when adding
+    - [ ] added logging for all file io ops...
 
 - [x] fix 7z? download fails for TommySoucy/MoreCheckmarks
     - [x] Add 7z extraction (e.g. sevenz-rust)
+    - [ ] add support for dll file assets
 
 - [x] fix mods not being deletable by user with admin right in explorer???!!
     - was just a readonly thing of .part files?
@@ -42,6 +48,7 @@
     - [ ] proper rework to get rid of all the filters eventually and just care about versions with a proper impl
     - [ ] more checks for spt version, description of release, maybe even scrape hub page (unlikely)
     - [ ] add mode where releases without a version are not installed until confirmed by the user, also show a link that opens a google search with that mod already entered
+
 
 
 # future

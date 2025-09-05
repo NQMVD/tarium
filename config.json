@@ -1,0 +1,134 @@
+{
+  "profiles": [
+    {
+      "name": "spt-test",
+      "output_dir": "\\\\?\\C:\\SPT-TEST",
+      "filters": [
+        {
+          "GameVersionStrict": ["3.11"]
+        }
+      ],
+      "mods": [
+        {
+          "name": "AlgorithmicLevelProgression",
+          "identifier": {
+            "GitHubRepository": ["Andrewgdewar", "AlgorithmicLevelProgression"]
+          },
+          "slug": "AlgorithmicLevelProgression"
+        },
+        {
+          "name": "BodySound",
+          "identifier": {
+            "GitHubRepository": ["yox92", "BodySound"]
+          },
+          "slug": "BodySound"
+        },
+        {
+          "name": "LootValue",
+          "identifier": {
+            "GitHubRepository": ["IhanaMies", "LootValue"]
+          },
+          "slug": "LootValue"
+        },
+        {
+          "name": "MoreCheckmarks",
+          "identifier": {
+            "GitHubRepository": ["TommySoucy", "MoreCheckmarks"]
+          },
+          "slug": "MoreCheckmarks"
+        },
+        {
+          "name": "PeinBetterRearSights",
+          "identifier": {
+            "GitHubRepository": ["peinwastaken", "PeinBetterRearSights"]
+          },
+          "slug": "PeinBetterRearSights"
+        },
+        {
+          "name": "SAIN",
+          "identifier": {
+            "GitHubRepository": ["Solarint", "SAIN"]
+          },
+          "slug": "SAIN"
+        },
+        {
+          "name": "SmartAction",
+          "identifier": {
+            "GitHubRepository": ["yox92", "SmartAction"]
+          },
+          "slug": "SmartAction"
+        },
+        {
+          "name": "SPT-BigBrain",
+          "identifier": {
+            "GitHubRepository": ["DrakiaXYZ", "SPT-BigBrain"]
+          },
+          "slug": "SPT-BigBrain"
+        },
+        {
+          "name": "SPT-DynamicMaps",
+          "identifier": {
+            "GitHubRepository": ["acidphantasm", "SPT-DynamicMaps"]
+          },
+          "slug": "SPT-DynamicMaps"
+        },
+        {
+          "name": "SPT-FOV-Fix",
+          "identifier": {
+            "GitHubRepository": ["space-commits", "SPT-FOV-Fix"]
+          },
+          "slug": "SPT-FOV-Fix"
+        },
+        {
+          "name": "SPT-LeaveItThere",
+          "identifier": {
+            "GitHubRepository": ["Jehree", "SPT-LeaveItThere"]
+          },
+          "slug": "SPT-LeaveItThere"
+        },
+        {
+          "name": "SPT-LootRadius",
+          "identifier": {
+            "GitHubRepository": ["DrakiaXYZ", "SPT-LootRadius"]
+          },
+          "slug": "SPT-LootRadius"
+        },
+        {
+          "name": "SPT-SearchOpenContainers",
+          "identifier": {
+            "GitHubRepository": ["DrakiaXYZ", "SPT-SearchOpenContainers"]
+          },
+          "slug": "SPT-SearchOpenContainers"
+        },
+        {
+          "name": "SPT-Waypoints",
+          "identifier": {
+            "GitHubRepository": ["DrakiaXYZ", "SPT-Waypoints"]
+          },
+          "slug": "SPT-Waypoints"
+        },
+        {
+          "name": "SPTVRAMCleaner",
+          "identifier": {
+            "GitHubRepository": ["matsixx", "SPTVRAMCleaner"]
+          },
+          "slug": "SPTVRAMCleaner"
+        },
+        {
+          "name": "UIFixes",
+          "identifier": {
+            "GitHubRepository": ["tyfon7", "UIFixes"]
+          },
+          "slug": "UIFixes"
+        },
+        {
+          "name": "WeaponCustomizer",
+          "identifier": {
+            "GitHubRepository": ["tyfon7", "WeaponCustomizer"]
+          },
+          "slug": "WeaponCustomizer"
+        }
+      ]
+    }
+  ]
+}

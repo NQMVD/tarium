@@ -13,18 +13,17 @@ use libarov::{
     },
     upgrade::{mod_downloadable, DownloadData},
 };
+use log::{debug, info};
 use parking_lot::Mutex;
+use sevenz_rust::decompress_file;
+use std::collections::HashSet;
+use std::{fs::read_dir, mem::take, sync::Arc, time::Duration};
 use std::{
-    fs::read_dir,
-    mem::take,
-    sync::Arc,
-    time::Duration,
+    fs::{self, copy as fs_copy, create_dir_all, File},
+    path::{Path, PathBuf},
 };
 use tokio::task::JoinSet;
-use std::{fs::{self, File, create_dir_all, copy as fs_copy}, path::{Path, PathBuf}};
-use std::collections::HashSet;
 use zip::ZipArchive;
-use sevenz_rust::decompress_file;
 
 #[cfg(windows)]
 fn normalize_permissions(path: &Path) {
@@ -53,11 +52,15 @@ fn normalize_permissions(path: &Path) {
 
 /// Normalize the permissions of all files and directories in a directory tree.
 fn normalize_tree(root: &Path) {
-    if !root.exists() { return; }
+    if !root.exists() {
+        return;
+    }
     if root.is_dir() {
         normalize_permissions(root);
         if let Ok(rd) = std::fs::read_dir(root) {
-            for e in rd.flatten() { normalize_tree(&e.path()); }
+            for e in rd.flatten() {
+                normalize_tree(&e.path());
+            }
         }
     } else {
         normalize_permissions(root);
@@ -70,13 +73,22 @@ fn move_processed_archive(from: &Path, archive_store: &Path) -> Result<()> {
     if target.exists() {
         let _ = fs::remove_file(&target); // best-effort remove existing
     }
+
     match fs::rename(from, &target) {
-        Ok(_) => Ok(()),
+        Ok(_) => {
+            info!(SCOPE = "subcommands::upgrade", from:display = from.display().to_string(), to:display = target.display().to_string(); "moved archive to store");
+            Ok(())
+        }
         Err(_) => {
             // Fallback: copy then delete original
+
+            info!(SCOPE = "subcommands::upgrade", from:display = from.display().to_string(), to:display = target.display().to_string(); "rename failed; copying then removing");
             fs_copy(from, &target)?;
+
             fs::remove_file(from)?;
+
             normalize_permissions(&target);
+
             Ok(())
         }
     }
@@ -99,23 +111,57 @@ fn extract_all_archives(output_dir: &Path) -> Result<()> {
                 match ext.to_ascii_lowercase().as_str() {
                     "zip" => {
                         if let Err(e) = extract_zip(&path, output_dir) {
-                            println!("{} Failed extracting {}: {}", CROSS.red(), path.file_name().unwrap_or_default().to_string_lossy(), e);
+                            println!(
+                                "{} Failed extracting {}: {}",
+                                CROSS.red(),
+                                path.file_name().unwrap_or_default().to_string_lossy(),
+                                e
+                            );
                         } else {
                             if let Err(e) = move_processed_archive(&path, &archive_store) {
-                                println!("{} Extracted (move failed: {}) {}", CROSS.red(), e, path.file_name().unwrap_or_default().to_string_lossy());
+                                println!(
+                                    "{} Extracted (move failed: {}) {}",
+                                    CROSS.red(),
+                                    e,
+                                    path.file_name().unwrap_or_default().to_string_lossy()
+                                );
                             } else {
-                                println!("{} Extracted (moved) {}", TICK.clone(), path.file_name().unwrap_or_default().to_string_lossy().dimmed());
+                                println!(
+                                    "{} Extracted (moved) {}",
+                                    TICK.clone(),
+                                    path.file_name()
+                                        .unwrap_or_default()
+                                        .to_string_lossy()
+                                        .dimmed()
+                                );
                             }
                         }
                     }
                     "7z" => {
                         if let Err(e) = extract_7z(&path, output_dir) {
-                            println!("{} Failed extracting {}: {}", CROSS.red(), path.file_name().unwrap_or_default().to_string_lossy(), e);
+                            println!(
+                                "{} Failed extracting {}: {}",
+                                CROSS.red(),
+                                path.file_name().unwrap_or_default().to_string_lossy(),
+                                e
+                            );
                         } else {
                             if let Err(e) = move_processed_archive(&path, &archive_store) {
-                                println!("{} Extracted (move failed: {}) {}", CROSS.red(), e, path.file_name().unwrap_or_default().to_string_lossy());
+                                println!(
+                                    "{} Extracted (move failed: {}) {}",
+                                    CROSS.red(),
+                                    e,
+                                    path.file_name().unwrap_or_default().to_string_lossy()
+                                );
                             } else {
-                                println!("{} Extracted (moved) {}", TICK.clone(), path.file_name().unwrap_or_default().to_string_lossy().dimmed());
+                                println!(
+                                    "{} Extracted (moved) {}",
+                                    TICK.clone(),
+                                    path.file_name()
+                                        .unwrap_or_default()
+                                        .to_string_lossy()
+                                        .dimmed()
+                                );
                             }
                         }
                     }
@@ -128,46 +174,100 @@ fn extract_all_archives(output_dir: &Path) -> Result<()> {
 }
 
 fn extract_7z(archive_path: &Path, output_dir: &Path) -> Result<()> {
-    let temp_dir = output_dir.join(".extract_tmp").join(archive_path.file_stem().unwrap_or_default());
-    if temp_dir.exists() { fs::remove_dir_all(&temp_dir)?; }
+    let temp_dir = output_dir
+        .join(".extract_tmp")
+        .join(archive_path.file_stem().unwrap_or_default());
+
+    if temp_dir.exists() {
+        info!(SCOPE = "subcommands::upgrade", path:display = temp_dir.display().to_string(); "removing pre-existing temp dir");
+        fs::remove_dir_all(&temp_dir)?;
+    }
+
+    info!(SCOPE = "subcommands::upgrade", path:display = temp_dir.display().to_string(); "creating temp dir for 7z");
+
     create_dir_all(&temp_dir)?;
+
+    info!(SCOPE = "subcommands::upgrade", from:display = archive_path.display().to_string(), to:display = temp_dir.display().to_string(); "decompressing 7z archive");
+
     decompress_file(archive_path, &temp_dir)?;
+
     // quick permission normalization on extracted tree
+
     fn walk_and_normalize(p: &Path) {
         if let Ok(rd) = std::fs::read_dir(p) {
             for e in rd.flatten() {
                 let path = e.path();
-                if path.is_dir() { walk_and_normalize(&path); } else { normalize_permissions(&path); }
+
+                if path.is_dir() {
+                    walk_and_normalize(&path);
+                } else {
+                    normalize_permissions(&path);
+                }
             }
         }
     }
+
     walk_and_normalize(&temp_dir);
+
+    info!(SCOPE = "subcommands::upgrade", path:display = temp_dir.display().to_string(); "installing extracted contents");
+
     install_extracted(&temp_dir, output_dir)?;
+
+    info!(SCOPE = "subcommands::upgrade", path:display = temp_dir.display().to_string(); "cleaning temp dir after 7z install");
+
     fs::remove_dir_all(&temp_dir)?;
+
     Ok(())
 }
 
 fn extract_zip(zip_path: &Path, output_dir: &Path) -> Result<()> {
+    debug!(SCOPE = "subcommands::upgrade", path:display = zip_path.display().to_string(); "opening zip for extraction");
+
     let file = File::open(zip_path)?;
+
     let mut archive = ZipArchive::new(file)?;
-    let temp_dir = output_dir.join(".extract_tmp").join(zip_path.file_stem().unwrap_or_default());
-    if temp_dir.exists() { fs::remove_dir_all(&temp_dir)?; }
+
+    let temp_dir = output_dir
+        .join(".extract_tmp")
+        .join(zip_path.file_stem().unwrap_or_default());
+
+    if temp_dir.exists() {
+        info!(SCOPE = "subcommands::upgrade", path:display = temp_dir.display().to_string(); "removing pre-existing temp dir");
+        fs::remove_dir_all(&temp_dir)?;
+    }
+
     create_dir_all(&temp_dir)?;
+
+    info!(SCOPE = "subcommands::upgrade", path:display = temp_dir.display().to_string(); "created temp dir for zip");
 
     for i in 0..archive.len() {
         let mut file = archive.by_index(i)?;
+
         let outpath = temp_dir.join(file.mangled_name());
+
         if file.is_dir() {
+            debug!(SCOPE = "subcommands::upgrade", path:display = outpath.display().to_string(); "creating directory from zip entry");
+
             create_dir_all(&outpath)?;
         } else {
-            if let Some(parent) = outpath.parent() { create_dir_all(parent)?; }
+            if let Some(parent) = outpath.parent() {
+                create_dir_all(parent)?;
+            }
+
+            debug!(SCOPE = "subcommands::upgrade", path:display = outpath.display().to_string(); "creating file from zip entry");
+
             let mut outfile = File::create(&outpath)?;
+
             std::io::copy(&mut file, &mut outfile)?;
+
             normalize_permissions(&outpath);
         }
     }
+
     install_extracted(&temp_dir, output_dir)?;
+
     fs::remove_dir_all(&temp_dir)?;
+
     Ok(())
 }
 
@@ -176,7 +276,12 @@ fn install_extracted(temp_dir: &Path, output_dir: &Path) -> Result<()> {
     let mut root = temp_dir.to_path_buf();
     if let Ok(entries) = fs::read_dir(&root) {
         let collected: Vec<_> = entries.filter_map(|e| e.ok()).collect();
-        if collected.len() == 1 && collected[0].file_type().map(|t| t.is_dir()).unwrap_or(false) {
+        if collected.len() == 1
+            && collected[0]
+                .file_type()
+                .map(|t| t.is_dir())
+                .unwrap_or(false)
+        {
             root = collected[0].path();
         }
     }
@@ -197,7 +302,12 @@ fn install_extracted(temp_dir: &Path, output_dir: &Path) -> Result<()> {
     if let Ok(entries) = fs::read_dir(&root) {
         for entry in entries.filter_map(|e| e.ok()) {
             let p = entry.path();
-            if p.is_file() && p.extension().and_then(|e| e.to_str()).map(|e| e.eq_ignore_ascii_case("dll")).unwrap_or(false) {
+            if p.is_file()
+                && p.extension()
+                    .and_then(|e| e.to_str())
+                    .map(|e| e.eq_ignore_ascii_case("dll"))
+                    .unwrap_or(false)
+            {
                 let target = plugins_dir.join(p.file_name().unwrap());
                 fs_copy(&p, &target)?;
                 normalize_permissions(&target);
@@ -209,7 +319,9 @@ fn install_extracted(temp_dir: &Path, output_dir: &Path) -> Result<()> {
 }
 
 fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
-    if !dst.exists() { create_dir_all(dst)?; }
+    if !dst.exists() {
+        create_dir_all(dst)?;
+    }
     for entry in fs::read_dir(src)? {
         let entry = entry?;
         let path = entry.path();
@@ -217,7 +329,9 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
         if path.is_dir() {
             copy_dir_recursive(&path, &target)?;
         } else {
-            if let Some(parent) = target.parent() { create_dir_all(parent)?; }
+            if let Some(parent) = target.parent() {
+                create_dir_all(parent)?;
+            }
             fs_copy(&path, &target)?; // overwrite
             normalize_permissions(&target);
         }
@@ -234,8 +348,16 @@ fn ensure_required_dirs(output_dir: &Path) -> Result<()> {
     ];
     for dir in required {
         if !dir.exists() {
-            if let Err(e) = create_dir_all(&dir) {
-                println!("{} Failed to create directory {}: {}", CROSS.red(), dir.display(), e);
+            match create_dir_all(&dir) {
+                Ok(_) => {
+                    info!(SCOPE = "subcommands::upgrade", path:display = dir.display().to_string(); "created required directory")
+                }
+                Err(e) => println!(
+                    "{} Failed to create directory {}: {}",
+                    CROSS.red(),
+                    dir.display(),
+                    e
+                ),
             }
         }
     }
@@ -285,10 +407,7 @@ pub async fn get_platform_downloadables(profile: &Profile) -> Result<(Vec<Downlo
                     Ok(Some(download_file))
                 }
                 Err(err) => {
-                    println!(
-                        "{}",
-                        format!("{CROSS} {:pad_len$}  {err}", mod_.name).red()
-                    );
+                    println!("{}", format!("{CROSS} {:pad_len$}  {err}", mod_.name).red());
                     Ok(None)
                 }
             }
@@ -317,11 +436,7 @@ pub async fn upgrade(profile: &Profile) -> Result<()> {
         for file in read_dir(profile.output_dir.join("user"))? {
             let file = file?;
             let path = file.path();
-            if path.is_file()
-                && path
-                    .extension()
-                    .is_some_and(|ext| ext.eq_ignore_ascii_case("jar"))
-            {
+            if path.is_file() {
                 to_install.push((file.file_name(), path));
             }
         }
@@ -333,7 +448,7 @@ pub async fn upgrade(profile: &Profile) -> Result<()> {
         // Download directly to the output directory
         .map(|thing| thing.output = thing.filename().into())
         .for_each(drop); // Doesn't drop any data, just runs the iterator
-    // Always attempt extraction of any archives present (new or existing)
+                         // Always attempt extraction of any archives present (new or existing)
     if to_download.is_empty() && to_install.is_empty() {
         println!("\n{}", "All up to date!".bold());
         if let Err(e) = extract_all_archives(&profile.output_dir) {

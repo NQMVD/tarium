@@ -11,10 +11,16 @@ pub use switch::switch;
 pub use upgrade::upgrade;
 
 use crate::file_picker::pick_folder;
+
 use anyhow::{ensure, Context as _, Result};
+
 use fs_extra::dir::{copy, CopyOptions};
+
 use inquire::Confirm;
+
 use libium::BASE_DIRS;
+use log::info;
+
 use std::{fs::read_dir, path::Path};
 
 pub fn check_output_directory(output_dir: &Path) -> Result<()> {
@@ -49,7 +55,10 @@ pub fn check_output_directory(output_dir: &Path) -> Result<()> {
                     "Output Directory",
                 )?
                 .context("Please pick an output directory")?;
+
+                info!(SCOPE = "subcommands::modpack", from = check_dir.display().to_string(), to = backup_dir.display().to_string(); "creating backup copy");
                 copy(check_dir, backup_dir, &CopyOptions::new())?;
+                info!(SCOPE = "subcommands::modpack", to = backup_dir.display().to_string(); "backup copy created");
             }
         }
     }

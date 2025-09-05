@@ -10,6 +10,7 @@ pub use add::add;
 use directories::{BaseDirs, ProjectDirs};
 use std::{path::PathBuf, sync::LazyLock};
 
+use log::debug;
 use regex::Regex;
 
 pub static GITHUB_API: LazyLock<octocrab::Octocrab> = LazyLock::new(|| {

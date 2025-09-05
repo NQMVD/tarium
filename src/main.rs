@@ -20,18 +20,17 @@ mod add;
 mod cli;
 mod download;
 mod file_picker;
-mod subcommands;
 mod logging;
+mod subcommands;
 
 #[cfg(test)]
 mod tests;
 
 use anyhow::{anyhow, bail, ensure, Context as _, Result};
 use clap::{CommandFactory, Parser};
-use cli::{Tarium, ProfileSubCommands, SubCommands};
+use cli::{ProfileSubCommands, SubCommands, Tarium};
 use colored::{ColoredString, Colorize};
 use indicatif::ProgressStyle;
-use log::{debug, warn, info};
 use libarov::{
     config::{
         self,
@@ -40,6 +39,7 @@ use libarov::{
     },
     iter_ext::IterExt as _,
 };
+use log::{debug, info, warn};
 use std::{
     env::{set_var, var_os},
     process::ExitCode,
@@ -174,9 +174,14 @@ async fn actual_main(mut cli_app: Tarium) -> Result<()> {
     info!(config_path:debug; "Resolved config path");
 
     // Handle old configs which may be in a different path
+
     if !config_path.exists() && old_default_config_path.exists() {
+        info!(from:debug = &old_default_config_path, to:debug = config_path; "Relocating legacy config file");
+
         std::fs::rename(old_default_config_path, config_path)
             .context("Failed to relocate config file to the new path, try doing so manually.")?;
+
+        info!(path:debug = config_path; "Legacy config file relocated");
     }
 
     let mut config = config::read_config(config_path)?;

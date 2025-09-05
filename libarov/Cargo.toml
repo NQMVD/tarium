@@ -7,8 +7,8 @@ authors = [
     "Daniel Hauck (SolidTux)",
     "Noah <noahb@hey.com>",
 ]
-description = "Multi-source backend for managing Minecraft mods and modpacks from Modrinth, CurseForge, and Github Releases"
-repository = "https://github.com/gorilla-devs/ferium/tree/main/libium"
+description = "Multi-source backend for managing SPT mods from Github Releases"
+repository = "https://github.com/NQMVD/tarium"
 readme = "README.md"
 license = "MPL-2.0"
 categories = ["games"]
@@ -33,3 +33,4 @@ thiserror = "2.0"
 regex = "1.11"
 sha1 = "0.10"
 chrono = "0.4.41"
+log = { version = "0.4", features = ["kv"] }

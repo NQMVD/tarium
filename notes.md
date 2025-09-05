@@ -32,6 +32,12 @@ Hub Name + Version:
 - Release Name
 - Asset Zip Name
 
+Artem 2.1.2:
+- no github lol
+
+MOAR + Bagels - Ultra lite spawn mod 3.1.6:
+- Andrewgdewar/MOAR-Client
+- no releases on github
 
 Dynamic Maps 0.5.7:
 - acidphantasm/SPT-DynamicMaps
@@ -46,14 +52,7 @@ VRAM Cleaner 1.0.2:
 Ram Cleaner Fix 1.2.2:
 - CactusPie/SPT-RamCleanerInterval
 - SPT-RamCleanerInterval-1.0.0
-- CactusPie.RamCleanerInterval.dll
-
-Artem 2.1.2:
-- no github lol
-
-MOAR + Bagels - Ultra lite spawn mod 3.1.6:
-- Andrewgdewar/MOAR-Client
-- no releases on github
+- CactusPie.RamCleanerInterval.dll  <-- !!!
 
 Algorithmic Level Progression 5.5.0-Beta:
 - Andrewgdewar/AlgorithmicLevelProgression
@@ -175,12 +174,19 @@ SmartAction 1.0.0:
 - SmartAction 1.0.0
 - SmartAction.zip
 
+APBS - Acid's Progressive Bot System 1.8.2:
+- acidphantasm/acidphantasm-apbs
+- 1.8.2
+- acidphantasm-progressivebotsystem.zip
+
+
 
 
 ## Must Haves
 - acidphantasm/SPT-DynamicMaps
 - DrakiaXYZ/SPT-Waypoints
 - DrakiaXYZ/SPT-BigBrain
+- Solarint/SAIN
 - Andrewgdewar/AlgorithmicLevelProgression
 - peinwastaken/PeinBetterRearSights
 - TommySoucy/MoreCheckmarks
@@ -209,17 +215,15 @@ SmartAction 1.0.0:
 
 
 
-
-
 ## Bot Spawn Mod Combos
-- Solarint/SAIN
 
 1. MOAR
+- [Page](https://hub.sp-tarkov.com/files/file/1059-moar-bagels-ultra-lite-spawn-mod/)
+
+> "Highly recommended to be used with SAIN/QB/LB for an immersive live-like experience."
 
 2. APBS
+- [Page](https://hub.sp-tarkov.com/files/file/2180-apbs-acid-s-progressive-bot-system/)
+- acidphantasm/acidphantasm-apbs
 
-
-
-
-parse the versions in the release name and assume that 3.11.* or 3.10.* is the SPT version its for _shrug_
-
+> "This mod was only tested with SAIN, SWAG+Donuts, LootingBots, QuestingBots, and few WTT Custom Weapons. I have had no issues with those mods."

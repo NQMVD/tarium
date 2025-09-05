@@ -1392,6 +1392,7 @@ dependencies = [
  "derive_more",
  "directories",
  "futures-util",
+ "log",
  "octocrab",
  "regex",
  "reqwest",

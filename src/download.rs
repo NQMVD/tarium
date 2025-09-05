@@ -1,12 +1,10 @@
 use crate::{default_semaphore, SEMAPHORE, STYLE_BYTE, TICK};
 use anyhow::{anyhow, bail, Error, Result};
 use colored::Colorize as _;
-use fs_extra::{
-    dir::{copy as copy_dir, CopyOptions as DirCopyOptions},
-    file::{move_file, CopyOptions as FileCopyOptions},
-};
+use fs_extra::dir::{copy as copy_dir, CopyOptions as DirCopyOptions};
 // use indicatif::ProgressBar; // Temporarily disabled progress bar
 use libarov::{iter_ext::IterExt as _, upgrade::DownloadData};
+use log::{debug, info, warn};
 use parking_lot::Mutex;
 use std::{
     ffi::OsString,
@@ -19,9 +17,9 @@ use tokio::task::JoinSet;
 
 /// Check the given `directory`
 ///
-/// - If there are files there that are not in `to_download` or `to_install`, they will be moved to `directory`/.old
 /// - If a file in `to_download` or `to_install` is already there, it will be removed from the respective vector
-/// - If the file is a `.part` file or if the move failed, the file will be deleted
+/// - If there are `.part` files, they will be deleted
+/// - Other files are left in place (SPT mod manager doesn't need to move old files to .old)
 pub async fn clean(
     directory: &Path,
     to_download: &mut Vec<DownloadData>,
@@ -43,7 +41,7 @@ pub async fn clean(
             .bold()
         );
     }
-    create_dir_all(directory.join(".old"))?;
+
     for file in read_dir(directory)? {
         let file = file?;
         // If it's a file
@@ -62,16 +60,9 @@ pub async fn clean(
             } else if let Some(index) = to_install.iter().position(|thing| filename == thing.0) {
                 // Don't install it
                 to_install.swap_remove(index);
-            // Or else, move the file to `directory`/.old
-            // If the file is a `.part` file or if the move failed, delete the file
-            } else if filename.ends_with("part")
-                || move_file(
-                    file.path(),
-                    directory.join(".old").join(filename),
-                    &FileCopyOptions::new(),
-                )
-                .is_err()
-            {
+            // If the file is a `.part` file, delete it
+            } else if filename.ends_with("part") {
+                warn!(SCOPE = "src::download::clean", path:display = file.path().display().to_string(); "deleting partial file");
                 remove_file(file.path())?;
             }
         }
@@ -146,10 +137,14 @@ pub async fn download(
     //     .finish_and_clear();
     for (name, path) in to_install {
         if path.is_file() {
+            info!(SCOPE = "src::download::install", target:display = output_dir.join(&name).display().to_string(), source:display = path.display().to_string(); "copying file");
             copy(path, output_dir.join(&name))?;
         } else if path.is_dir() {
+            info!(SCOPE = "src::download::install", target:display = output_dir.display().to_string(), source:display = path.display().to_string(); "copying directory");
             let mut copy_options = DirCopyOptions::new();
+
             copy_options.overwrite = true;
+
             copy_dir(path, &output_dir, &copy_options)?;
         } else {
             bail!("Could not determine whether installable is a file or folder")
