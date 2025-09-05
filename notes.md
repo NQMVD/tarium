@@ -38,6 +38,15 @@ Dynamic Maps 0.5.7:
 - 0.5.7
 - DynamicMaps-0.5.7-ba475092.zip
 
+VRAM Cleaner 1.0.2:
+- matsixx/SPTVRAMCleaner
+- SPTVRAMCleaner-v1.0.2
+- SPTVRAMCleaner-v1.0.2.zip
+
+Ram Cleaner Fix 1.2.2:
+- CactusPie/SPT-RamCleanerInterval
+- SPT-RamCleanerInterval-1.0.0
+- CactusPie.RamCleanerInterval.dll
 
 Artem 2.1.2:
 - no github lol
@@ -86,6 +95,56 @@ Weapon Customizer 2.0.1:
 - v2.0.1
 - Tyfon-WeaponCustomizer-2.0.1.zip
 
+UI Fixes 4.2.2:
+- tyfon7/UIFixes
+- v4.2.2
+- Tyfon-UIFixes-4.2.2.zip
+
+LootValue 5.0.2:
+- IhanaMies/LootValue
+- 5.0.2 for SPT 3.11
+- IhanaMies-LootValue-5.0.2.7z
+
+Insurance Plus 1.3.0:
+- m-barneto/InsurancePlus
+- Insurance Plus v1.3.0
+- mattdokn-insuranceplus.zip
+
+BodySound 1.0.5:
+- yox92/BodySound
+- BodySound 1.0.5
+- BodySound.zip
+
+Waypoints - Expanded Navmesh 1.7.1:
+- DrakiaXYZ/SPT-Waypoints
+- 1.7.1
+- DrakiaXYZ-Waypoints-1.7.1.7z
+
+BigBrain 1.3.2:
+- DrakiaXYZ/SPT-BigBrain
+- 1.3.2
+- DrakiaXYZ-BigBrain-1.3.2.7z
+
+Leave It There 2.0.1:
+- Jehree/SPT-LeaveItThere
+- v2.0.1
+- LeaveItThere-2.0.1.zip
+
+Amands's Graphics 1.6.5: [3.10]
+- Amands2Mello/AmandsGraphics
+- AmandsGraphics 1.6.5
+- AmandsGraphics.1.6.5.zip
+
+Loot Radius 1.4.1:
+- DrakiaXYZ/SPT-LootRadius
+- 1.4.1
+- DrakiaXYZ-LootRadius-1.4.1.7z
+
+Search Open Containers 1.3.0:
+- DrakiaXYZ/SPT-SearchOpenContainers
+- 1.3.0
+- DrakiaXYZ-SearchOpenContainers-1.3.0.7z
+
 SAIN - Solarint's AI Modifications - Full AI Combat System Replacement 4.1.3:
 - Solarint/SAIN
 - SAIN 4.1.3 for SPT 3.11.x
@@ -106,62 +165,61 @@ Virtual's Custom Quest Loader 2.0.4:
 - SPT 3.11 v2.0.4
 - VCQL-2.0.4.zip
 
+Fontaine's FOV Fix 3.1.1:
+- space-commits/SPT-FOV-Fix
+- Fontaine's FOV Fix v3.1.1 for SPT 3.11
+- Fontaine-FOV-Fix-v3.1.1-SPT-v3.11.zip
+
+SmartAction 1.0.0:
+- yox92/SmartAction
+- SmartAction 1.0.0
+- SmartAction.zip
+
+
+
+## Must Haves
+- acidphantasm/SPT-DynamicMaps
+- DrakiaXYZ/SPT-Waypoints
+- DrakiaXYZ/SPT-BigBrain
+- Andrewgdewar/AlgorithmicLevelProgression
+- peinwastaken/PeinBetterRearSights
+- TommySoucy/MoreCheckmarks
+- tyfon7/WeaponCustomizer
+- IhanaMies/LootValue
+- yox92/BodySound
+- DrakiaXYZ/SPT-LootRadius
+- DrakiaXYZ/SPT-SearchOpenContainers
+- space-commits/SPT-FOV-Fix
+- yox92/SmartAction
+- matsixx/SPTVRAMCleaner
+
+
+
+## PP Personal Preference
+- GhostFenixx/SVM
+- thuynguyentrungdang/ODT-ItemInfo
+- gndworks/spt-2-slot-mags
+- Szonszczyk/Colored-Tracers
+- tyfon7/UIFixes
+- m-barneto/InsurancePlus
+- Jehree/SPT-LeaveItThere
+- Amands2Mello/AmandsGraphics
+- Skwizzy/SPT-LootingBots
+- VirtualAE/Virtuals-Custom-Quest-Loader
+
+
+
+
+
+## Bot Spawn Mod Combos
+- Solarint/SAIN
+
+1. MOAR
+
+2. APBS
 
 
 
 
 parse the versions in the release name and assume that 3.11.* or 3.10.* is the SPT version its for _shrug_
 
-also find a 7z crate...
-
-add a black list for shit like SVM who needs another app to setup fully?!
-
-
-
-
-
-
-### First Startup
-
-You can have your own set of mods in what is called a 'profile'.
-
-- Create a new profile by running `ferium profile create` and entering the details for your profile.
-  - Then, add your mods using `ferium add`.
-  - Finally, download your mods using `ferium upgrade`.
-
-### Automatically Import Mods
-
-```bash
-ferium scan
-```
-
-This command scans a directory with mods, and attempts to add them to your profile.
-
-The directory defaults to your profile's output directory. Some mods are available on both Modrinth and CurseForge; ferium will prefer Modrinth by default, but you can choose CurseForge instead using the `--platform` flag.
-
-As long as you ensure the mods in the directory match the configured mod loader and Minecraft version, they should all add properly. Some mods might require some [additional tuning](#check-overrides). You can also bypass the compatibility checks using the `--force` flag.
-
-### Manually Adding Mods
-
-> [!TIP]
-> You can specify multiple identifiers to add multiple mods at once
-
-#### GitHub
-```bash
-ferium add owner/name
-```
-`owner` is the username of the owner of the repository and `name` is the name of the repository, both are case-insensitive (e.g. [Sodium's repository](https://github.com/CaffeineMC/sodium) has the id `CaffeineMC/sodium`). You can find these at the top left of the repository's page.  
-So to add [Sodium](https://github.com/CaffeineMC/sodium), you should run `ferium add CaffeineMC/sodium`.
-
-> [!IMPORTANT]
-> The GitHub repository needs to upload JAR files to their _Releases_ for ferium to download, or else it will refuse to be added.
-
-#### User Mods
-
-If you want to use files that are not downloadable by ferium, place them in a subfolder called `user` in the output directory. Files here will be copied to the output directory when upgrading.
-
-> [!NOTE]
-> Profiles using Quilt will not copy their user mods, this is because Quilt automatically loads mods from nested directories (such as the user folder) since version `0.18.1-beta.3`.
-  
-
-mod files will be deleted on upgrade!!! there is a simple backup feature already, but its gonna do it everytime now

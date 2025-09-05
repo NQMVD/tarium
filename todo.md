@@ -29,10 +29,6 @@
 - [x] move processed archives to output_dir/MODS after successful extraction to reduce clutter.
 - [x] when running upgrade with archives already downloaded it only downloads the files again, but it doesnt extract and move them into the folders as it should
 
-- [ ] fix game versions filter bullshit somehow
-    - [x] somewhat fixed, selection algo is better for sure
-    - [ ] proper rework to get rid of all the filters eventually and just care about versions with a proper impl
-
 - [ ] after extracting and moving mods, the ones in user/mods should get the package.json data checked for addition check for game version compatibility
 
 - [ ] an option to force override mods, full redownload, full replace in mods folders
@@ -41,7 +37,18 @@
     - [ ] add a rate limit request when fetching fails with that error message to get reset time stamp
 
 
+- [ ] fix game versions filter bullshit somehow
+    - [x] somewhat fixed, selection algo is better for sure
+    - [ ] proper rework to get rid of all the filters eventually and just care about versions with a proper impl
+    - [ ] more checks for spt version, description of release, maybe even scrape hub page (unlikely)
+    - [ ] add mode where releases without a version are not installed until confirmed by the user, also show a link that opens a google search with that mod already entered
+
+
 # future
+
+- [ ] add a black list for shit like SVM who needs another app to setup fully?!
+
+- [ ] add checks for incompatible fields in package.json
 
 - [ ] hook up the hub as api?
 
