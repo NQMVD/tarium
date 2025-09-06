@@ -19,7 +19,7 @@ This is a fork btw, i took the [ferium](https://github.com/gorilla-devs/ferium) 
 For now its just the terminal tool, but i already have plans to create a Wrapper around it, to give you guys a proper App you can click and drag around in. It will use a framework called eframe which in other cases showed crazy minimal resource usage, to not impact game performance.
 That will have to wait tho, until the program is more polished and tested.
 
-### How to install it:
+## How to install it:
 > I **highly** recommend creating a copy of your SPT installation before you use tarium right now.
 > Not because the program isn't safe, but it _is_ considered experimental and in such cases it's always advised to make a backup.
 
@@ -28,7 +28,7 @@ That will have to wait tho, until the program is more polished and tested.
 
 > But if you know what you're doing, you can install it where-ever-you-want and run it from where-ever-you-want, that's why profiles have the SPT dir stored.
 
-### How to use it:
+## How to use it:
  _looks more complicated than it is, trust me._
 
 1. Open the terminal by opening the OPEN-CMD.bat file (just double click)
@@ -64,7 +64,7 @@ To update the mods just run `tarium.exe download` or `tarium.exe upgrade` (might
 To update tarium itself, just download the new version from the releases page and replace the old tarium.exe with the new one.
 I'll create an update-self command later, but for now this is the only way.
 
-### Additional info:
+## Additional info:
 
 There are alot of aliases for the commands too, you can see them all by running `tarium.exe --help` or `tarium.exe <command> --help` for a specific command.
 
@@ -88,7 +88,7 @@ You can just ignore it normally, but if you run into any problems, you can send 
 
 ---
 
-### Todo list:
+## Todo list:
 
 # High Priority
 
