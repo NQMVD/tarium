@@ -54,6 +54,8 @@ pub enum SubCommands {
         #[clap(long, short, visible_alias = "lock")]
         pin: Option<String>,
     },
+    /// Check GitHub App authentication status
+    Auth,
     /// Add mods to the profile from a file containing a list of identifiers
     AddFrom {
         /// The file containing mod identifiers (one per line)
