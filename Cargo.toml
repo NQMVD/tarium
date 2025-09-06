@@ -51,6 +51,7 @@ tokio = { version = "1.47.1", default-features = false, features = [
     "rt-multi-thread",
     "macros",
 ] }
+
 clap_complete = "4.5.57"
 parking_lot = "0.12.4"
 indicatif = "0.18.0"

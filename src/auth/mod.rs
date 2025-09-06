@@ -4,6 +4,7 @@
 //! No user authentication is required - credentials are embedded at build time.
 
 use anyhow::{anyhow, Result};
+use colored::Colorize;
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -124,7 +125,10 @@ impl GitHubAppClient {
             .post(&url)
             .header("Authorization", format!("Bearer {}", jwt))
             .header("Accept", "application/vnd.github.v3+json")
-            .header("User-Agent", "Tarium-CLI")
+            .header(
+                "User-Agent",
+                "tarium/5.0.0 (https://github.com/NQMVD/tarium)",
+            )
             .send()
             .await?;
 
@@ -153,36 +157,17 @@ impl GitHubAppClient {
         Ok(token_response.token)
     }
 
-    /// Get an authenticated reqwest client with GitHub App token
-    pub async fn authenticated_client(&self) -> Result<reqwest::Client> {
-        let token = self.get_installation_token().await?;
-
-        let mut headers = reqwest::header::HeaderMap::new();
-        headers.insert(
-            reqwest::header::AUTHORIZATION,
-            reqwest::header::HeaderValue::from_str(&format!("Bearer {}", token))?,
-        );
-        headers.insert(
-            reqwest::header::USER_AGENT,
-            reqwest::header::HeaderValue::from_static("Tarium-CLI"),
-        );
-        headers.insert(
-            reqwest::header::ACCEPT,
-            reqwest::header::HeaderValue::from_static("application/vnd.github.v3+json"),
-        );
-
-        let client = reqwest::Client::builder()
-            .default_headers(headers)
-            .build()?;
-
-        Ok(client)
-    }
-
     /// Test the GitHub App authentication
     pub async fn test_authentication(&self) -> Result<()> {
-        let client = self.authenticated_client().await?;
+        let token = self.get_installation_token().await?;
+        let client = reqwest::Client::new();
         let response = client
             .get("https://api.github.com/rate_limit")
+            .header("Authorization", format!("Bearer {}", token))
+            .header(
+                "User-Agent",
+                "tarium/5.0.0 (https://github.com/NQMVD/tarium)",
+            )
             .send()
             .await?;
 
@@ -198,9 +183,15 @@ impl GitHubAppClient {
 
     /// Get current rate limit information
     pub async fn get_rate_limit_info(&self) -> Result<RateLimitInfo> {
-        let client = self.authenticated_client().await?;
+        let token = self.get_installation_token().await?;
+        let client = reqwest::Client::new();
         let response = client
             .get("https://api.github.com/rate_limit")
+            .header("Authorization", format!("Bearer {}", token))
+            .header(
+                "User-Agent",
+                "tarium/5.0.0 (https://github.com/NQMVD/tarium)",
+            )
             .send()
             .await?;
 
@@ -220,6 +211,13 @@ impl GitHubAppClient {
                 response.status()
             ))
         }
+    }
+
+    /// Set the GitHub App token for libarov to use
+    pub async fn initialize_for_libarov(&self) -> Result<()> {
+        let token = self.get_installation_token().await?;
+        std::env::set_var("TARIUM_GITHUB_APP_TOKEN", token);
+        Ok(())
     }
 }
 
@@ -246,6 +244,46 @@ impl RateLimitInfo {
     }
 }
 
+/// Handle the auth status command
+pub async fn handle_auth_command() -> Result<()> {
+    match GitHubAppClient::embedded() {
+        Some(client) => {
+            println!("{} GitHub App configured", "✓".green().bold());
+
+            match client.test_authentication().await {
+                Ok(()) => {
+                    println!("{} Authentication: Working", "✓".green());
+
+                    if let Ok(rate_info) = client.get_rate_limit_info().await {
+                        rate_info.display();
+                    }
+                }
+                Err(e) => {
+                    println!("{} Authentication: Failed", "✗".red());
+                    println!("Error: {}", e);
+                }
+            }
+
+            println!("Using embedded credentials");
+        }
+        None => {
+            println!("{} GitHub App not configured", "✗".red());
+            println!("This build does not have embedded GitHub App credentials.");
+            println!("API requests will be limited to 60/hour instead of 5000/hour.");
+        }
+    }
+
+    Ok(())
+}
+
+/// Initialize GitHub App authentication for the application
+pub async fn initialize_github_app() -> Result<()> {
+    if let Some(client) = GitHubAppClient::embedded() {
+        client.initialize_for_libarov().await?;
+    }
+    Ok(())
+}
+
 /// Get a GitHub App client if available
 pub async fn get_github_app_client() -> Option<GitHubAppClient> {
     if let Some(client) = GitHubAppClient::embedded() {
@@ -259,8 +297,22 @@ pub async fn get_github_app_client() -> Option<GitHubAppClient> {
 /// Get an authenticated GitHub client or fall back to anonymous
 pub async fn get_github_client() -> reqwest::Client {
     if let Some(app_client) = get_github_app_client().await {
-        if let Ok(client) = app_client.authenticated_client().await {
-            return client;
+        if let Ok(token) = app_client.get_installation_token().await {
+            let mut headers = reqwest::header::HeaderMap::new();
+            headers.insert(
+                reqwest::header::AUTHORIZATION,
+                reqwest::header::HeaderValue::from_str(&format!("Bearer {}", token)).unwrap(),
+            );
+            headers.insert(
+                reqwest::header::USER_AGENT,
+                reqwest::header::HeaderValue::from_static(
+                    "tarium/5.0.0 (https://github.com/NQMVD/tarium)",
+                ),
+            );
+
+            if let Ok(client) = reqwest::Client::builder().default_headers(headers).build() {
+                return client;
+            }
         }
     }
     reqwest::Client::new()

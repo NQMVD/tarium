@@ -128,6 +128,11 @@ fn main() -> ExitCode {
 }
 
 async fn actual_main(mut cli_app: Tarium) -> Result<()> {
+    // Initialize GitHub App authentication for libarov
+    if let Err(e) = auth::initialize_github_app().await {
+        warn!("Failed to initialize GitHub App authentication: {}", e);
+    }
+
     // The complete command should not require a config.
     // See [#139](https://github.com/gorilla-devs/tarium/issues/139) for why this might be a problem.
     if let SubCommands::Complete { shell } = cli_app.subcommand {
