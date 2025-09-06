@@ -1,4 +1,4 @@
-name: Build & Release (tarium.exe + bat)
+name: Build & Release
 
 on:
   workflow_dispatch: {}
@@ -39,25 +39,21 @@ jobs:
             Write-Error "TARIUM_GITHUB_PRIVATE_KEY secret is not set"
             exit 1
           }
-          Write-Host "✅ All GitHub App secrets are present"
-          Write-Host "✅ App ID: $env:TARIUM_EMBED_GITHUB_APP_ID"
-          Write-Host "✅ Installation ID: $env:TARIUM_EMBED_GITHUB_INSTALLATION_ID"
-          Write-Host "✅ Private key length: $($env:TARIUM_EMBED_GITHUB_PRIVATE_KEY.Length) characters"
+          Write-Host "All GitHub App secrets are present"
         env:
           TARIUM_EMBED_GITHUB_APP_ID: ${{ secrets.TARIUM_GITHUB_APP_ID }}
           TARIUM_EMBED_GITHUB_INSTALLATION_ID: ${{ secrets.TARIUM_GITHUB_INSTALLATION_ID }}
           TARIUM_EMBED_GITHUB_PRIVATE_KEY: ${{ secrets.TARIUM_GITHUB_PRIVATE_KEY }}
 
-      - name: Build release with embedded GitHub App credentials
+      - name: Build release with embedded credentials
         run: |
-          Write-Host "🚀 Building Tarium with embedded GitHub App credentials..."
+          Write-Host "Building Tarium with embedded GitHub App credentials..."
           cargo build --release
           if ($LASTEXITCODE -ne 0) {
             Write-Error "Build failed with exit code: $LASTEXITCODE"
             exit $LASTEXITCODE
           }
-          Write-Host "✅ Build completed successfully"
-          Write-Host "📦 Binary created with embedded credentials"
+          Write-Host "Build completed successfully"
         env:
           TARIUM_EMBED_CREDENTIALS: "1"
           TARIUM_EMBED_GITHUB_APP_ID: ${{ secrets.TARIUM_GITHUB_APP_ID }}
@@ -66,13 +62,13 @@ jobs:
 
       - name: Verify embedded credentials
         run: |
-          Write-Host "🧪 Testing embedded GitHub App credentials..."
+          Write-Host "Testing embedded GitHub App credentials..."
           .\target\release\tarium.exe auth status
           if ($LASTEXITCODE -ne 0) {
             Write-Error "Embedded credentials test failed"
             exit 1
           }
-          Write-Host "✅ Embedded credentials working correctly"
+          Write-Host "Embedded credentials working correctly"
 
       - name: Prepare release files
         id: package
@@ -103,7 +99,7 @@ jobs:
           copy release\tarium.exe artifact-root\tarium.exe
           copy release\OPEN-CMD.bat artifact-root\OPEN-CMD.bat
 
-      - name: Upload build outputs to artifact store
+      - name: Upload build outputs
         uses: actions/upload-artifact@v4
         with:
           name: windows-release
@@ -113,22 +109,17 @@ jobs:
     needs: build-windows
     runs-on: ubuntu-latest
     steps:
-      - name: Download packaged artifact
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           name: windows-release
           path: artifacts
-
-      - name: List downloaded files
-        run: |
-          ls -la artifacts || true
 
       - name: Get current date
         id: date
         run: echo "date=$(date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        id: create_release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.run_id }}-${{ steps.date.outputs.date }}

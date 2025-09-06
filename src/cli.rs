@@ -54,11 +54,8 @@ pub enum SubCommands {
         #[clap(long, short, visible_alias = "lock")]
         pin: Option<String>,
     },
-    /// Configure GitHub App authentication for higher API rate limits
-    Auth {
-        #[clap(subcommand)]
-        subcommand: AuthSubCommands,
-    },
+    /// Check GitHub App authentication status
+    Auth,
     /// Add mods to the profile from a file containing a list of identifiers
     AddFrom {
         /// The file containing mod identifiers (one per line)
@@ -278,21 +275,4 @@ impl From<FilterArguments> for Vec<Filter> {
 
         filters
     }
-}
-
-#[derive(Clone, Debug, Subcommand)]
-pub enum AuthSubCommands {
-    /// Set up GitHub App credentials (no user authentication required)
-    Login {
-        /// GitHub App ID (will prompt if not provided)
-        #[clap(long)]
-        client_id: Option<String>,
-        /// Unused (kept for compatibility)
-        #[clap(long, hide = true)]
-        client_secret: Option<String>,
-    },
-    /// Remove stored GitHub App credentials
-    Logout,
-    /// Check GitHub App authentication status
-    Status,
 }

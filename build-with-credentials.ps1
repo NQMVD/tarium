@@ -22,7 +22,7 @@ param(
     [string]$ExtraFlags = ""
 )
 
-Write-Host "🚀 Building Tarium with embedded GitHub App credentials..." -ForegroundColor Blue
+Write-Host "Building Tarium with embedded GitHub App credentials..." -ForegroundColor Blue
 
 # Validate parameters
 if ([string]::IsNullOrWhiteSpace($AppId)) {
@@ -61,10 +61,10 @@ if (-not ($InstallationId -match '^\d+$')) {
     exit 1
 }
 
-Write-Host "✅ App ID: $AppId" -ForegroundColor Green
-Write-Host "✅ Installation ID: $InstallationId" -ForegroundColor Green
-Write-Host "✅ Private Key: $FullPrivateKeyPath" -ForegroundColor Green
-Write-Host "✅ Profile: $Profile" -ForegroundColor Green
+Write-Host "App ID: $AppId"
+Write-Host "Installation ID: $InstallationId"
+Write-Host "Private Key: $FullPrivateKeyPath"
+Write-Host "Profile: $Profile"
 
 # Set environment variables for the build
 $env:TARIUM_EMBED_CREDENTIALS = "1"
@@ -81,17 +81,17 @@ if ($Profile -eq "release") {
 
 if ($Target) {
     $cargoArgs += "--target", $Target
-    Write-Host "✅ Target: $Target" -ForegroundColor Green
+    Write-Host "Target: $Target"
 }
 
 if ($ExtraFlags) {
     $cargoArgs += $ExtraFlags.Split(' ')
-    Write-Host "✅ Extra flags: $ExtraFlags" -ForegroundColor Green
+    Write-Host "Extra flags: $ExtraFlags"
 }
 
 Write-Host ""
-Write-Host "🔨 Running cargo build..." -ForegroundColor Yellow
-Write-Host "Command: cargo $($cargoArgs -join ' ')" -ForegroundColor Cyan
+Write-Host "Running cargo build..."
+Write-Host "Command: cargo $($cargoArgs -join ' ')"
 
 # Run the build
 try {
@@ -99,7 +99,7 @@ try {
 
     if ($LASTEXITCODE -eq 0) {
         Write-Host ""
-        Write-Host "🎉 Build completed successfully!" -ForegroundColor Green
+        Write-Host "Build completed successfully!" -ForegroundColor Green
 
         # Determine binary path
         $binaryName = "tarium.exe"
@@ -113,14 +113,14 @@ try {
             $fileSize = (Get-Item $binaryPath).Length
             $fileSizeMB = [math]::Round($fileSize / 1MB, 2)
 
-            Write-Host "📦 Binary created: $binaryPath" -ForegroundColor Green
-            Write-Host "📏 Size: $fileSizeMB MB" -ForegroundColor Green
+            Write-Host "Binary created: $binaryPath"
+            Write-Host "Size: $fileSizeMB MB"
             Write-Host ""
-            Write-Host "✅ The binary now contains embedded GitHub App credentials" -ForegroundColor Green
-            Write-Host "✅ Users can run it without any authentication setup" -ForegroundColor Green
+            Write-Host "The binary now contains embedded GitHub App credentials"
+            Write-Host "Users can run it without any authentication setup"
             Write-Host ""
-            Write-Host "🧪 Test the binary with:" -ForegroundColor Blue
-            Write-Host "  $binaryPath auth status" -ForegroundColor Cyan
+            Write-Host "Test the binary with:"
+            Write-Host "  $binaryPath auth status"
         } else {
             Write-Warning "Binary not found at expected path: $binaryPath"
         }
@@ -142,7 +142,7 @@ finally {
 }
 
 Write-Host ""
-Write-Host "🔒 Security note:" -ForegroundColor Yellow
-Write-Host "  The private key is now embedded in the binary" -ForegroundColor White
-Write-Host "  Treat this binary as sensitive - don't share in public repositories" -ForegroundColor White
-Write-Host "  For open source distribution, use a separate GitHub App" -ForegroundColor White
+Write-Host "Security note:" -ForegroundColor Yellow
+Write-Host "  The private key is now embedded in the binary"
+Write-Host "  Treat this binary as sensitive - don't share in public repositories"
+Write-Host "  For open source distribution, use a separate GitHub App"

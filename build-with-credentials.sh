@@ -34,8 +34,6 @@ show_usage() {
     echo "  $0 1910665 84660496 ./tarium-private-key.pem"
     echo "  $0 1910665 84660496 ./key.pem x86_64-unknown-linux-gnu release"
     echo "  $0 1910665 84660496 ./key.pem \"\" release \"--features extra\""
-    echo ""
-    echo "For more information, see GITHUB_APP_SETUP.md"
 }
 
 # Check if minimum arguments provided
@@ -53,7 +51,7 @@ TARGET="${4:-}"
 PROFILE="${5:-release}"
 EXTRA_FLAGS="${6:-}"
 
-print_colored $BLUE "🚀 Building Tarium with embedded GitHub App credentials..."
+print_colored $BLUE "Building Tarium with embedded GitHub App credentials..."
 
 # Validate parameters
 if [ -z "$APP_ID" ]; then
@@ -98,17 +96,17 @@ if [ "$PROFILE" != "debug" ] && [ "$PROFILE" != "release" ]; then
     exit 1
 fi
 
-print_colored $GREEN "✅ App ID: $APP_ID"
-print_colored $GREEN "✅ Installation ID: $INSTALLATION_ID"
-print_colored $GREEN "✅ Private Key: $FULL_PRIVATE_KEY_PATH"
-print_colored $GREEN "✅ Profile: $PROFILE"
+echo "App ID: $APP_ID"
+echo "Installation ID: $INSTALLATION_ID"
+echo "Private Key: $FULL_PRIVATE_KEY_PATH"
+echo "Profile: $PROFILE"
 
 if [ -n "$TARGET" ]; then
-    print_colored $GREEN "✅ Target: $TARGET"
+    echo "Target: $TARGET"
 fi
 
 if [ -n "$EXTRA_FLAGS" ]; then
-    print_colored $GREEN "✅ Extra flags: $EXTRA_FLAGS"
+    echo "Extra flags: $EXTRA_FLAGS"
 fi
 
 # Set environment variables for the build
@@ -133,13 +131,13 @@ if [ -n "$EXTRA_FLAGS" ]; then
 fi
 
 echo ""
-print_colored $YELLOW "🔨 Running cargo build..."
-print_colored $CYAN "Command: cargo $CARGO_ARGS"
+echo "Running cargo build..."
+echo "Command: cargo $CARGO_ARGS"
 
 # Run the build
 if cargo $CARGO_ARGS; then
     echo ""
-    print_colored $GREEN "🎉 Build completed successfully!"
+    print_colored $GREEN "Build completed successfully!"
 
     # Determine binary path
     BINARY_NAME="tarium"
@@ -157,14 +155,14 @@ if cargo $CARGO_ARGS; then
             FILE_SIZE_MB="unknown"
         fi
 
-        print_colored $GREEN "📦 Binary created: $BINARY_PATH"
-        print_colored $GREEN "📏 Size: ${FILE_SIZE_MB} MB"
+        echo "Binary created: $BINARY_PATH"
+        echo "Size: ${FILE_SIZE_MB} MB"
         echo ""
-        print_colored $GREEN "✅ The binary now contains embedded GitHub App credentials"
-        print_colored $GREEN "✅ Users can run it without any authentication setup"
+        echo "The binary now contains embedded GitHub App credentials"
+        echo "Users can run it without any authentication setup"
         echo ""
-        print_colored $BLUE "🧪 Test the binary with:"
-        print_colored $CYAN "  ./$BINARY_PATH auth status"
+        echo "Test the binary with:"
+        echo "  ./$BINARY_PATH auth status"
     else
         print_colored $YELLOW "Warning: Binary not found at expected path: $BINARY_PATH"
     fi
@@ -181,7 +179,7 @@ unset TARIUM_EMBED_GITHUB_INSTALLATION_ID
 unset TARIUM_EMBED_GITHUB_PRIVATE_KEY_PATH
 
 echo ""
-print_colored $YELLOW "🔒 Security note:"
-print_colored $NC "  The private key is now embedded in the binary"
-print_colored $NC "  Treat this binary as sensitive - don't share in public repositories"
-print_colored $NC "  For open source distribution, use a separate GitHub App"
+print_colored $YELLOW "Security note:"
+echo "  The private key is now embedded in the binary"
+echo "  Treat this binary as sensitive - don't share in public repositories"
+echo "  For open source distribution, use a separate GitHub App"

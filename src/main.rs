@@ -197,8 +197,8 @@ async fn actual_main(mut cli_app: Tarium) -> Result<()> {
         SubCommands::Complete { .. } | SubCommands::Profiles => {
             unreachable!();
         }
-        SubCommands::Auth { subcommand } => {
-            subcommands::auth::handle_auth_command(subcommand).await?;
+        SubCommands::Auth => {
+            subcommands::auth::handle_auth_command().await?;
         }
         SubCommands::Add {
             identifiers,
