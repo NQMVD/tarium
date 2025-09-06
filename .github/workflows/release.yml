@@ -25,8 +25,54 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Build release
-        run: cargo build --release
+      - name: Validate GitHub App secrets
+        run: |
+          if (-not $env:TARIUM_EMBED_GITHUB_APP_ID) {
+            Write-Error "TARIUM_GITHUB_APP_ID secret is not set"
+            exit 1
+          }
+          if (-not $env:TARIUM_EMBED_GITHUB_INSTALLATION_ID) {
+            Write-Error "TARIUM_GITHUB_INSTALLATION_ID secret is not set"
+            exit 1
+          }
+          if (-not $env:TARIUM_EMBED_GITHUB_PRIVATE_KEY) {
+            Write-Error "TARIUM_GITHUB_PRIVATE_KEY secret is not set"
+            exit 1
+          }
+          Write-Host "✅ All GitHub App secrets are present"
+          Write-Host "✅ App ID: $env:TARIUM_EMBED_GITHUB_APP_ID"
+          Write-Host "✅ Installation ID: $env:TARIUM_EMBED_GITHUB_INSTALLATION_ID"
+          Write-Host "✅ Private key length: $($env:TARIUM_EMBED_GITHUB_PRIVATE_KEY.Length) characters"
+        env:
+          TARIUM_EMBED_GITHUB_APP_ID: ${{ secrets.TARIUM_GITHUB_APP_ID }}
+          TARIUM_EMBED_GITHUB_INSTALLATION_ID: ${{ secrets.TARIUM_GITHUB_INSTALLATION_ID }}
+          TARIUM_EMBED_GITHUB_PRIVATE_KEY: ${{ secrets.TARIUM_GITHUB_PRIVATE_KEY }}
+
+      - name: Build release with embedded GitHub App credentials
+        run: |
+          Write-Host "🚀 Building Tarium with embedded GitHub App credentials..."
+          cargo build --release
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Build failed with exit code: $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
+          Write-Host "✅ Build completed successfully"
+          Write-Host "📦 Binary created with embedded credentials"
+        env:
+          TARIUM_EMBED_CREDENTIALS: "1"
+          TARIUM_EMBED_GITHUB_APP_ID: ${{ secrets.TARIUM_GITHUB_APP_ID }}
+          TARIUM_EMBED_GITHUB_INSTALLATION_ID: ${{ secrets.TARIUM_GITHUB_INSTALLATION_ID }}
+          TARIUM_EMBED_GITHUB_PRIVATE_KEY: ${{ secrets.TARIUM_GITHUB_PRIVATE_KEY }}
+
+      - name: Verify embedded credentials
+        run: |
+          Write-Host "🧪 Testing embedded GitHub App credentials..."
+          .\target\release\tarium.exe auth status
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Embedded credentials test failed"
+            exit 1
+          }
+          Write-Host "✅ Embedded credentials working correctly"
 
       - name: Prepare release files
         id: package

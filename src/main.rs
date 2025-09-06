@@ -17,6 +17,7 @@
 #![cfg_attr(debug_assertions, allow(warnings))]
 
 mod add;
+mod auth;
 mod cli;
 mod download;
 mod file_picker;
@@ -195,6 +196,9 @@ async fn actual_main(mut cli_app: Tarium) -> Result<()> {
     match cli_app.subcommand {
         SubCommands::Complete { .. } | SubCommands::Profiles => {
             unreachable!();
+        }
+        SubCommands::Auth { subcommand } => {
+            subcommands::auth::handle_auth_command(subcommand).await?;
         }
         SubCommands::Add {
             identifiers,
