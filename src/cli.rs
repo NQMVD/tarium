@@ -50,12 +50,22 @@ pub enum SubCommands {
         #[clap(long, short, visible_alias = "no-checks")]
         force: bool,
 
-        // Load from a file containing a list of identifiers (one per line)
-        // #[clap(long, short, visible_alias = "file")]
-        // file: Option<PathBuf>,
         /// Pin a mod to a specific version - CURRENTLY DISABLED
         #[clap(long, short, visible_alias = "lock")]
         pin: Option<String>,
+    },
+    /// Add mods to the profile from a file containing a list of identifiers
+    AddFrom {
+        /// The file containing mod identifiers (one per line)
+        ///
+        /// Each line should contain a GitHub repository identifier in the format `owner/repo`.
+        /// Empty lines and lines starting with # are ignored.
+        #[clap(value_hint(ValueHint::FilePath))]
+        file: PathBuf,
+
+        /// Temporarily ignore game version and mod loader checks and add the mod anyway
+        #[clap(long, short, visible_alias = "no-checks")]
+        force: bool,
     },
     /// Print shell auto completions for the specified shell
     Complete {

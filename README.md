@@ -44,11 +44,10 @@ That will have to wait tho, until the program is more polished and tested.
         - the id is on the right side of the mod page on the SPT hub, under "Github"
     - Run `tarium.exe add Solarint/SAIN --no-checks` to add it to your profile
     - the `--no-checks` is needed because of the ratelimits, it will skip checking if it's a valid repo, so make sure you got the right one
-    - if you want to be sure, just run it without the `--no-checks`
     - If you want to add multiple mods at once, just add more identifiers after the command like so:
         - `tarium.exe add Solarint/SAIN DrakiaXYZ/SPT-Waypoints DrakiaXYZ/SPT-BigBrain --no-checks`
-    - until we get proper modpacks you can also create a text file with a list of mods you want to add, one per line, and use the `--file` option like so:
-        - `tarium.exe add --file mods.txt --no-checks`
+    - until we get proper modpacks, you can also create a text file with a list of mods you want to add, one per line, and use the `--file` option like so:
+        - `tarium.exe add-from mods.txt --no-checks`
 
 4. After adding all the mods you want, i recommend running `tarium.exe list` to see what you added
     - then run `tarium.exe download` to download and install them
@@ -86,7 +85,6 @@ I recommend using `-v` for normal use, and `-vvv` if you run into any problems.
 This will create a tarium.log file btw, located in the same folder as the tarium.exe file.
 You can just ignore it normally, but if you run into any problems, you can send it to me and i'll try to help you out.
 
----
 
 ## Todo list:
 
@@ -94,11 +92,6 @@ You can just ignore it normally, but if you run into any problems, you can send 
 
 - [x] remove old code that moves all files to .old
 - [x] fix jar check in upgrade?!
-
-- [ ] add logging for when filters couldnt match anything, or generally more logging...
-    - [x] take custom logging i made from needs
-    - [x] add more logging when filtering when adding
-    - [x] add logging for all file io ops...
 
 - [x] fix 7z? download fails for TommySoucy/MoreCheckmarks
     - [x] Add 7z extraction (e.g. sevenz-rust)
@@ -114,6 +107,10 @@ You can just ignore it normally, but if you run into any problems, you can send 
     - [x] i think it should only collapse if there is folders nested with the same name
     - [x] i think it should only collapse when the archive has a single folder in it with the same name as the archive
 
+- [ ] add an option for the add subcommand to accept a file that has a list of mods to add
+    - doesnt work because the indentifiers vec wants at least one mod
+    - [ ] need another subcommand?
+
 - [ ] dont move archives to SPT folder for extraction, keep that in another folder, consider the root SPT(output_dir) folder as vital, aswell as the spt folder inside Bepinex/plugins
 
 ### General
@@ -122,10 +119,6 @@ You can just ignore it normally, but if you run into any problems, you can send 
     - [ ] also rename upgrade to update
 
 - [ ] make autocompletions work for clap
-
-- [ ] add an option for the add subcommand to accept a file that has a list of mods to add
-    - doesnt work because the indentifiers vec wants at least one mod
-    - [ ] need another subcommand?
 
 - [ ] make the profile switch command remove the old mods from the old profile
     - [ ] or at least warn the user that they need to do that manually
@@ -145,7 +138,7 @@ You can just ignore it normally, but if you run into any problems, you can send 
 
 - [x] fix fucking github lol
     - the problem is that the graphql endpoint requires auth request, unlike the rest api which has the 60/h free...x
-    - [ ] dedupe the get gh releases+assets thingy
+    - [ ] dedupe the get gh releases+assets code
 
 - [x] change mod dir
     - [x] support for checking two dirs
@@ -171,6 +164,11 @@ You can just ignore it normally, but if you run into any problems, you can send 
     - [ ] proper rework to get rid of all the filters eventually and just care about versions with a proper impl
     - [ ] more checks for spt version, description of release, maybe even scrape hub page (unlikely)
     - [ ] add mode where releases without a version are not installed until confirmed by the user, also show a link that opens a google search with that mod already entered
+
+- [ ] add logging for when filters couldnt match anything, or generally more logging...
+    - [x] take custom logging i made from needs
+    - [x] add more logging when filtering when adding
+    - [x] add logging for all file io ops...
 
 - [ ] maintain tests if possible...
 

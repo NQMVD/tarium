@@ -46,7 +46,7 @@ pub fn parse_id(id: String) -> ModIdentifier {
 pub async fn add(
     profile: &mut Profile,
     identifiers: Vec<ModIdentifier>,
-    perform_checks: bool, // TODO: re-implement this
+    perform_checks: bool,
 ) -> Result<(Vec<String>, Vec<(String, Error)>)> {
     // Adding identifiers
     let mut gh_ids = Vec::new();
@@ -59,30 +59,57 @@ pub async fn add(
         }
     }
 
-    let gh_repos = {
-        let mut repos_data = Vec::new();
-
-        // Process each repository using REST API instead of GraphQL
-        for (owner, name) in &gh_ids {
-            match fetch_repo_releases_rest(owner, name).await {
-                Ok(metadata) => {
-                    repos_data.push(((owner.clone(), name.clone()), metadata));
-                }
-                Err(err) => {
-                    errors.push((format!("{}/{}", owner, name), err));
-                }
-            }
-        }
-
-        repos_data
-    };
-
     let mut success_names = Vec::new();
 
-    for (repo, asset_names) in gh_repos {
-        match github(&repo, profile, Some(asset_names)).await {
-            Ok(_) => success_names.push(format!("{}/{}", repo.0, repo.1)),
-            Err(err) => errors.push((format!("{}/{}", repo.0, repo.1), err)),
+    if perform_checks {
+        // Fetch releases and perform compatibility checks
+        let gh_repos = {
+            let mut repos_data = Vec::new();
+
+            // Process each repository using REST API instead of GraphQL
+            for (owner, name) in &gh_ids {
+                match fetch_repo_releases_rest(owner, name).await {
+                    Ok(metadata) => {
+                        repos_data.push(((owner.clone(), name.clone()), metadata));
+                    }
+                    Err(err) => {
+                        errors.push((format!("{}/{}", owner, name), err));
+                    }
+                }
+            }
+
+            repos_data
+        };
+
+        for (repo, asset_names) in gh_repos {
+            match github(&repo, profile, Some(asset_names)).await {
+                Ok(_) => success_names.push(format!("{}/{}", repo.0, repo.1)),
+                Err(err) => errors.push((format!("{}/{}", repo.0, repo.1), err)),
+            }
+        }
+    } else {
+        // Skip release fetching and checks, just add repositories directly
+        for (owner, name) in &gh_ids {
+            // Check if project has already been added
+            if profile.mods.iter().any(|mod_| {
+                mod_.name.eq_ignore_ascii_case(name)
+                    || matches!(
+                        &mod_.identifier,
+                        ModIdentifier::GitHubRepository(o, r) if o == owner && r == name,
+                    )
+            }) {
+                errors.push((format!("{}/{}", owner, name), Error::AlreadyAdded));
+                continue;
+            }
+
+            // Add it to the profile directly without any other checks
+            profile.push_mod(
+                name.trim().to_string(),
+                ModIdentifier::GitHubRepository(owner.clone(), name.clone()),
+                name.trim().to_string(),
+            );
+
+            success_names.push(format!("{}/{}", owner, name));
         }
     }
 

@@ -231,6 +231,43 @@ async fn actual_main(mut cli_app: Tarium) -> Result<()> {
 
             did_add_fail = add::display_successes_failures(&successes, failures);
         }
+        SubCommands::AddFrom { file, force } => {
+            let profile = get_active_profile(&mut config)?;
+
+            // Read the file and parse identifiers
+            let file_content = std::fs::read_to_string(&file)
+                .with_context(|| format!("Failed to read file: {}", file.display()))?;
+
+            let mut identifiers = Vec::new();
+            for line in file_content.lines().map(str::trim) {
+                if line.is_empty() || line.starts_with('#') {
+                    continue;
+                }
+
+                if !line.contains('/') {
+                    bail!(
+                        "Invalid identifier format: '{}'. Expected format: 'owner/repo'",
+                        line
+                    );
+                }
+
+                identifiers.push(libarov::add::parse_id(line.to_string()));
+            }
+
+            if identifiers.is_empty() {
+                bail!("No valid mod identifiers found in file: {}", file.display());
+            }
+
+            info!(
+                "Adding {} mods from file: {}",
+                identifiers.len(),
+                file.display()
+            );
+
+            let (successes, failures) = libarov::add(profile, identifiers, !force).await?;
+
+            did_add_fail = add::display_successes_failures(&successes, failures);
+        }
         SubCommands::List { verbose, markdown } => {
             let profile = get_active_profile(&mut config)?;
             check_empty_profile(profile)?;

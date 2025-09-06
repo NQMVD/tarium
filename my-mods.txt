@@ -1,0 +1,26 @@
+# Must Haves
+acidphantasm/SPT-DynamicMaps
+DrakiaXYZ/SPT-Waypoints
+DrakiaXYZ/SPT-BigBrain
+Solarint/SAIN
+Andrewgdewar/AlgorithmicLevelProgression
+peinwastaken/PeinBetterRearSights
+TommySoucy/MoreCheckmarks
+tyfon7/WeaponCustomizer
+IhanaMies/LootValue
+yox92/BodySound
+DrakiaXYZ/SPT-LootRadius
+DrakiaXYZ/SPT-SearchOpenContainers
+space-commits/SPT-FOV-Fix
+yox92/SmartAction
+matsixx/SPTVRAMCleaner
+
+# PP Personal Preference
+tyfon7/UIFixes
+m-barneto/InsurancePlus
+Jehree/SPT-LeaveItThere
+Amands2Mello/AmandsGraphics
+
+# Bot Spawn Mods
+# APBS
+acidphantasm/acidphantasm-apbs

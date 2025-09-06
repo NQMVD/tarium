@@ -1,0 +1,8 @@
+# Test mod list for Tarium AddFrom functionality
+# Lines starting with # are comments and will be ignored
+
+# Popular SPT mods
+acidphantasm/SPT-DynamicMaps
+DrakiaXYZ/SPT-Waypoints
+DrakiaXYZ/SPT-BigBrain
+Solarint/SAIN
