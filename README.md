@@ -90,7 +90,7 @@ You can just ignore it normally, but if you run into any problems, you can send 
 
 ## Todo list:
 
-# High Priority
+### High Priority
 
 - [x] remove old code that moves all files to .old
 - [x] fix jar check in upgrade?!
@@ -116,7 +116,7 @@ You can just ignore it normally, but if you run into any problems, you can send 
 
 - [ ] dont move archives to SPT folder for extraction, keep that in another folder, consider the root SPT(output_dir) folder as vital, aswell as the spt folder inside Bepinex/plugins
 
-# General
+### General
 
 - [ ] split up download and install commands from upgrade, and make upgrade just call them both
     - [ ] also rename upgrade to update
@@ -174,7 +174,7 @@ You can just ignore it normally, but if you run into any problems, you can send 
 
 - [ ] maintain tests if possible...
 
-# Future
+### Future
 
 - [ ] add a black list for shit like SVM who needs another app to setup fully?!
 
