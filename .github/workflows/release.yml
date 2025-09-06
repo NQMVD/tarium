@@ -5,7 +5,7 @@ on:
 
 jobs:
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2022
     outputs:
       exe-path: ${{ steps.package.outputs.exe-path }}
       bat-path: ${{ steps.package.outputs.bat-path }}
@@ -48,8 +48,8 @@ jobs:
             echo cmd.exe /k>>release\OPEN-CMD.bat
             echo popd>>release\OPEN-CMD.bat
           )
-          echo "exe-path=release\\tarium.exe" >> $GITHUB_OUTPUT
-          echo "bat-path=release\\OPEN-CMD.bat" >> $GITHUB_OUTPUT
+          echo exe-path=release\\tarium.exe >> %GITHUB_OUTPUT%
+          echo bat-path=release\\OPEN-CMD.bat >> %GITHUB_OUTPUT%
 
       - name: Stage artifact root
         run: |
@@ -79,30 +79,14 @@ jobs:
 
       - name: Create GitHub Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: manual-${{ github.run_id }}
           name: manual-${{ github.run_id }}
           body: Release created by manual workflow run ${{ github.run_id }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload tarium.exe
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/tarium.exe
-          asset_name: tarium-${{ github.run_id }}-windows-x86_64.exe
-          asset_content_type: application/octet-stream
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload OPEN-CMD.bat
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/OPEN-CMD.bat
-          asset_name: open-spt-cmd-${{ github.run_id }}.bat
-          asset_content_type: text/plain
+          files: |
+            artifacts/tarium.exe
+            artifacts/OPEN-CMD.bat
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
