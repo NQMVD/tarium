@@ -30,6 +30,7 @@ jobs:
 
       - name: Prepare release files
         id: package
+        shell: cmd
         run: |
           mkdir release
           copy target\release\tarium.exe release\tarium.exe
