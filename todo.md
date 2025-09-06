@@ -24,7 +24,7 @@
 
 - [ ] dont move archives to SPT folder for extraction, keep that in another folder, consider the root SPT(output_dir) folder as vital, aswell as the spt folder inside Bepinex/plugins
 
-# current
+# General
 
 - [ ] split up download and install commands from upgrade, and make upgrade just call them both
     - [ ] also rename upgrade to update
@@ -92,3 +92,5 @@
 - [ ] enable/disable mods
     - [ ] like curseforge maybe
     - [ ] look at archive file and match files to delete them from mods folders for disabling - basically "installing/uninstalling" them
+
+- [ ] switch from cli to egui hehe
