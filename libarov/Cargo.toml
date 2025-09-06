@@ -1,13 +1,13 @@
 [package]
 name = "libarov"
-version = "1.32.0"
+version = "0.1.0"
 edition = "2021"
 authors = [
     "Ilesh Thiada (theRookieCoder) <ileshkt@gmail.com>",
     "Daniel Hauck (SolidTux)",
     "Noah <noahb@hey.com>",
 ]
-description = "Multi-source backend for managing SPT mods from Github Releases"
+description = "backend for managing SPT mods from Github Releases"
 repository = "https://github.com/NQMVD/tarium"
 readme = "README.md"
 license = "MPL-2.0"

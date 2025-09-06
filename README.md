@@ -1,4 +1,4 @@
-# Ferium
+# Tarium
 
 [![rust badge](https://img.shields.io/static/v1?label=Made%20with&message=Rust&logo=rust&labelColor=e82833&color=b11522)](https://www.rust-lang.org)
 [![licence badge](https://img.shields.io/github/license/gorilla-devs/ferium)](https://github.com/gorilla-devs/ferium/blob/main/LICENSE.txt)
@@ -49,8 +49,8 @@ Simply specify the mods you use, and in just one command you can download the la
 
 ## Installation
 
-Ferium executables from GitHub Releases do not require any external dependencies at runtime.  
-If you compile from source on Linux, using GCC to build will result in binaries that require GCC to be available at runtime.  
+Ferium executables from GitHub Releases do not require any external dependencies at runtime.
+If you compile from source on Linux, using GCC to build will result in binaries that require GCC to be available at runtime.
 On Linux, the regular versions require some sort of desktop environment to be available that offers an XDG Desktop Portal to show the folder picker.
 The `nogui` versions do not need this as they won't have a GUI folder picker, making these variants suitable for server use.
 
@@ -101,9 +101,9 @@ pacstall -I ferium-bin
 ```
 
 #### [Nixpkgs](https://nixos.wiki/wiki/Nixpkgs) for _NixOS_ or _Linux_
-[![Nixpkgs unstable](https://repology.org/badge/version-for-repo/nix_unstable/ferium.svg)](https://search.nixos.org/packages?show=ferium&channel=unstable)  
+[![Nixpkgs unstable](https://repology.org/badge/version-for-repo/nix_unstable/ferium.svg)](https://search.nixos.org/packages?show=ferium&channel=unstable)
 > [!NOTE]
-> See the package page for installation instructions:  
+> See the package page for installation instructions:
 > https://search.nixos.org/packages?show=ferium&channel=unstable
 
 #### [Portage](https://wiki.gentoo.org/wiki/Portage) for _Gentoo_
@@ -140,7 +140,7 @@ cargo install --locked ferium
 ## Overview / Help Page
 
 > [!NOTE]
-> A lot of ferium's backend is implemented in [libium](https://github.com/gorilla-devs/ferium/tree/main/libium).  
+> A lot of ferium's backend is implemented in [libium](https://github.com/gorilla-devs/ferium/tree/main/libium).
 > It deals with things such as the config, adding mod(pack)s, upgrading, file pickers, etc.
 
 ### Program Configuration
@@ -191,21 +191,21 @@ As long as you ensure the mods in the directory match the configured mod loader 
 ferium add project_id
 ```
 
-`project_id` is the slug or project ID of the mod. (e.g. [Sodium](https://modrinth.com/mod/sodium) has the slug `sodium` and project ID `AANobbMI`). You can find the slug in the website URL (`modrinth.com/mod/<slug>`), and the project ID at the bottom of the left sidebar under 'Technical information'.  
+`project_id` is the slug or project ID of the mod. (e.g. [Sodium](https://modrinth.com/mod/sodium) has the slug `sodium` and project ID `AANobbMI`). You can find the slug in the website URL (`modrinth.com/mod/<slug>`), and the project ID at the bottom of the left sidebar under 'Technical information'.
 So to add [Sodium](https://modrinth.com/mod/sodium), you can run `ferium add sodium` or `ferium add AANobbMI`.
 
 #### CurseForge
 ```bash
 ferium add project_id
 ```
-`project_id` is the project ID of the mod. (e.g. [Terralith](https://www.curseforge.com/minecraft/mc-mods/terralith) has the project id `513688`). You can find the project id at the top of the right sidebar under 'About Project'.  
+`project_id` is the project ID of the mod. (e.g. [Terralith](https://www.curseforge.com/minecraft/mc-mods/terralith) has the project id `513688`). You can find the project id at the top of the right sidebar under 'About Project'.
 So to add [Terralith](https://www.curseforge.com/minecraft/mc-mods/terralith), you should run `ferium add 513688`.
 
 #### GitHub
 ```bash
 ferium add owner/name
 ```
-`owner` is the username of the owner of the repository and `name` is the name of the repository, both are case-insensitive (e.g. [Sodium's repository](https://github.com/CaffeineMC/sodium) has the id `CaffeineMC/sodium`). You can find these at the top left of the repository's page.  
+`owner` is the username of the owner of the repository and `name` is the name of the repository, both are case-insensitive (e.g. [Sodium's repository](https://github.com/CaffeineMC/sodium) has the id `CaffeineMC/sodium`). You can find these at the top left of the repository's page.
 So to add [Sodium](https://github.com/CaffeineMC/sodium), you should run `ferium add CaffeineMC/sodium`.
 
 > [!IMPORTANT]
@@ -224,20 +224,20 @@ If you want to use files that are not downloadable by ferium, place them in a su
 ```
 ferium modpack add project_id
 ```
-`project_id` is the slug or project ID of the modpack. (e.g. [Fabulously Optimized](https://modrinth.com/modpack/fabulously-optimized) has the slug `fabulously-optimized` and project ID `1KVo5zza`). You can find the slug in the website URL (`modrinth.com/modpack/<slug>`), and the project id at the bottom of the left sidebar under 'Technical information'.  
+`project_id` is the slug or project ID of the modpack. (e.g. [Fabulously Optimized](https://modrinth.com/modpack/fabulously-optimized) has the slug `fabulously-optimized` and project ID `1KVo5zza`). You can find the slug in the website URL (`modrinth.com/modpack/<slug>`), and the project id at the bottom of the left sidebar under 'Technical information'.
 So to add [Fabulously Optimized](https://modrinth.com/modpack/fabulously-optimized), you can run `ferium modpack add fabulously-optimized` or `ferium modpack add 1KVo5zza`.
 
 #### CurseForge
 ```
 ferium modpack add project_id
 ```
-`project_id` is the project ID of the modpack. (e.g. [Fabulously Optimized](https://www.curseforge.com/minecraft/modpacks/fabulously-optimized) has the project ID `396246`). You can find the project ID at the top of the right sidebar under 'About Project'.  
+`project_id` is the project ID of the modpack. (e.g. [Fabulously Optimized](https://www.curseforge.com/minecraft/modpacks/fabulously-optimized) has the project ID `396246`). You can find the project ID at the top of the right sidebar under 'About Project'.
 So to add [Fabulously Optimized](https://www.curseforge.com/minecraft/modpacks/fabulously-optimized), you should run `ferium modpack add 396246`.
 
 ### Upgrading Mods
 
 > [!WARNING]
-> If your output directory is not empty when setting it, ferium will offer to create a backup.  
+> If your output directory is not empty when setting it, ferium will offer to create a backup.
 > Please do so if it contains any files you would like to keep.
 
 Now after adding all your mods, run `ferium upgrade` to download all of them to your output directory.
@@ -247,13 +247,13 @@ You can choose to pick a custom output directory during profile creation or [cha
 If ferium fails to download a mod, it will print its name in red and try to give a reason. It will continue downloading the rest of your mods and will exit with an error.
 
 > [!TIP]
-> When upgrading, any files not downloaded by ferium will be moved to the `.old` folder in the output directory.  
+> When upgrading, any files not downloaded by ferium will be moved to the `.old` folder in the output directory.
 > See [user mods](#user-mods) for information on how to add mods that ferium cannot download.
 
 ### Upgrading Modpacks
 
 > [!WARNING]
-> If your output directory's `mods` and/or `resourcepacks` folders are not empty when setting it, ferium will offer to create a backup.  
+> If your output directory's `mods` and/or `resourcepacks` folders are not empty when setting it, ferium will offer to create a backup.
 > Please do so if it contains any files you would like to keep.
 
 Now after adding your modpack, run `ferium modpack upgrade` to download the modpack to your output directory.
@@ -275,7 +275,7 @@ You can remove any of your mods using `ferium remove`; just select the ones you 
 > Older versions did not have the ability to remove mods by their slug, since it wasn't stored in the config. If you are upgrading from an older version, you will initially not be able to remove mods by their slugs. You can run `ferium list -v` to load the slugs into the profile.
 
 > [!IMPORTANT]
-> Both mod names and GitHub repository identifiers are case insensitive.  
+> Both mod names and GitHub repository identifiers are case insensitive.
 > Mod names with spaces have to be given in quotes (`ferium remove "ok zoomer"`) or the spaces should be escaped (usually `ferium remove ok\ zoomer`, but depends on the shell).
 
 #### Check Overrides
@@ -284,7 +284,7 @@ If some mod is supposed to be compatible with your game version and mod loader, 
 
 If you suspect the author has not specified compatible versions or mod loaders, you can disable the game version or mod loader checks by using the `--ignore-game-version` and/or `--ignore-mod-loader` flags when adding a single mod, or manually setting `check_game_version` and/or `check_mod_loader` to false for the specific mod in the config file.
 
-For example, [Just Enough Items](https://www.curseforge.com/minecraft/mc-mods/jei) does not specify the mod loader for older Minecraft versions such as `1.12.2`. In this case, you would add JEI by running `ferium add 238222 --ignore-mod-loader` so that the mod loader check is disabled.  
+For example, [Just Enough Items](https://www.curseforge.com/minecraft/mc-mods/jei) does not specify the mod loader for older Minecraft versions such as `1.12.2`. In this case, you would add JEI by running `ferium add 238222 --ignore-mod-loader` so that the mod loader check is disabled.
 You can also manually disable the mod loader (and/or game version) check(s) in the config like so:
 ```json
 {
@@ -318,8 +318,8 @@ You can configure these same settings afterwards by running `ferium modpack conf
 
 #### Manage
 
-You can list out all the modpacks you have added by running `ferium modpack list` or `ferium modpacks`.  
-Switch to a different modpack using `ferium modpack switch`.  
+You can list out all the modpacks you have added by running `ferium modpack list` or `ferium modpacks`.
+Switch to a different modpack using `ferium modpack switch`.
 Remove a modpack using `ferium modpack remove` and selecting the modpack you want to remove.
 
 ### Profiles
@@ -350,8 +350,8 @@ You can configure these same settings afterwards by running `ferium profile conf
 
 #### Manage
 
-You can get information about the current profile by running `ferium profile` or `ferium profile info`, and about all the profiles you have by running `ferium profiles` or `ferium profile list`.  
-Switch to a different profile using `ferium profile switch`.  
+You can get information about the current profile by running `ferium profile` or `ferium profile info`, and about all the profiles you have by running `ferium profiles` or `ferium profile list`.
+Switch to a different profile using `ferium profile switch`.
 Delete a profile using `ferium profile delete` and selecting the profile you want to delete.
 
 ## Feature Requests
@@ -369,5 +369,5 @@ If you want to install it for testing purposes, [add the nightly toolchain](http
 
 You can run integration tests using `cargo test`, lint using `cargo clippy`, and delete all build and test artefacts using `just clean`.
 
-If you would like to see how to cross-compile for specific targets (e.g. Linux ARM) or other information such as the development libraries required, have a look at the [workflow file](.github/workflows/build.yml).  
+If you would like to see how to cross-compile for specific targets (e.g. Linux ARM) or other information such as the development libraries required, have a look at the [workflow file](.github/workflows/build.yml).
 If you still have doubts, feel free to [create a discussion](https://github.com/gorilla-devs/ferium/discussions/new?category=q-a) and I will try help you out.

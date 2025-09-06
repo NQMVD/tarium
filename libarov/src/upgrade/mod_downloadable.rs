@@ -46,12 +46,7 @@ impl Mod {
 
                 // Find the best candidate using filters
                 let mut best_candidate = None;
-                let filters = if self.override_filters {
-                    self.filters.clone()
-                } else {
-                    profile_filters.extend(self.filters.clone());
-                    profile_filters
-                };
+                let filters = profile_filters;
 
                 // Check each candidate against all filters
                 for (metadata, download_data) in &download_files {
@@ -76,7 +71,12 @@ impl Mod {
                         let all_empty_versions = download_files
                             .iter()
                             .all(|(m, _)| m.game_versions.is_empty());
-                        let has_game_version_filters = filters.iter().any(|f| matches!(f, Filter::GameVersionStrict(_) | Filter::GameVersionMinor(_)));
+                        let has_game_version_filters = filters.iter().any(|f| {
+                            matches!(
+                                f,
+                                Filter::GameVersionStrict(_) | Filter::GameVersionMinor(_)
+                            )
+                        });
                         if all_empty_versions && has_game_version_filters {
                             if let Some((metadata, dd)) = download_files.first() {
                                 println!("  Warning: no version tags found in release '{}'; using latest asset without version filtering.", metadata.title);
@@ -94,7 +94,11 @@ impl Mod {
                                     Filter::GameVersionStrict(_) | Filter::GameVersionMinor(_) => {
                                         // ignore version filters in this fallback
                                     }
-                                    _ => if !filter.matches(metadata).await? { continue 'candidate_loop; }
+                                    _ => {
+                                        if !filter.matches(metadata).await? {
+                                            continue 'candidate_loop;
+                                        }
+                                    }
                                 }
                             }
                             // All non-version filters passed

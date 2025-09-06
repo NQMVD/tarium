@@ -46,9 +46,7 @@ pub fn parse_id(id: String) -> ModIdentifier {
 pub async fn add(
     profile: &mut Profile,
     identifiers: Vec<ModIdentifier>,
-    perform_checks: bool,
-    override_profile: bool,
-    filters: Vec<Filter>,
+    perform_checks: bool, // TODO: re-implement this
 ) -> Result<(Vec<String>, Vec<(String, Error)>)> {
     // Adding identifiers
     let mut gh_ids = Vec::new();
@@ -82,15 +80,7 @@ pub async fn add(
     let mut success_names = Vec::new();
 
     for (repo, asset_names) in gh_repos {
-        match github(
-            &repo,
-            profile,
-            Some(asset_names),
-            override_profile,
-            filters.clone(),
-        )
-        .await
-        {
+        match github(&repo, profile, Some(asset_names)).await {
             Ok(_) => success_names.push(format!("{}/{}", repo.0, repo.1)),
             Err(err) => errors.push((format!("{}/{}", repo.0, repo.1), err)),
         }
@@ -107,8 +97,6 @@ pub async fn github(
     id: &(impl AsRef<str> + ToString, impl AsRef<str> + ToString),
     profile: &mut Profile,
     need_checks: Option<Metadata>,
-    override_profile: bool,
-    filters: Vec<Filter>,
 ) -> Result<()> {
     // Check if project has already been added
     if profile.mods.iter().any(|mod_| {
@@ -122,11 +110,7 @@ pub async fn github(
     }
 
     if let Some(download_files) = need_checks {
-        let applied_filters = if override_profile {
-            profile.filters.clone()
-        } else {
-            [profile.filters.clone(), filters.clone()].concat()
-        };
+        let applied_filters = profile.filters.clone();
 
         match check::select_latest(vec![download_files.clone()].iter(), applied_filters).await {
             Ok(_) => { /* compatible */ }
@@ -151,8 +135,6 @@ pub async fn github(
         id.1.as_ref().trim().to_string(),
         ModIdentifier::GitHubRepository(id.0.to_string(), id.1.to_string()),
         id.1.as_ref().trim().to_string(),
-        override_profile,
-        filters,
     );
 
     Ok(())

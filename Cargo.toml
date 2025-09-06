@@ -11,9 +11,9 @@ octocrab = "0.44.1"
 [package]
 
 name = "tarium"
-version = "5.0.0"
+version = "0.1.0"
 repository = "https://github.com/NQMVD/tarium"
-description = "Fast CLI program for managing SPT mods from Github Releases"
+description = "CLI program for managing SPT mods from Github Releases"
 authors = ["Noah <noahb@hey.com>"]
 
 license = "MPL-2.0"

@@ -51,7 +51,6 @@ pub struct Profile {
     pub filters: Vec<Filter>,
 
     pub mods: Vec<Mod>,
-
     // Kept for backwards compatibility reasons (i.e. migrating from a v4 config)
     // #[serde(skip_serializing)]
     // game_version: Option<String>,
@@ -59,8 +58,13 @@ pub struct Profile {
 
 impl Profile {
     /// A simple constructor that automatically deals with converting to filters
-    pub fn new(name: String, output_dir: PathBuf, game_versions: Vec<String>, strict: bool) -> Self {
-    // cutoff patch segment from supplied versions (remove patch component)
+    pub fn new(
+        name: String,
+        output_dir: PathBuf,
+        game_versions: Vec<String>,
+        strict: bool,
+    ) -> Self {
+        // cutoff patch segment from supplied versions (remove patch component)
         let game_versions = game_versions
             .into_iter()
             .map(|v| {
@@ -74,13 +78,11 @@ impl Profile {
             })
             .collect::<Vec<_>>();
 
-        let filters = vec![
-            if strict {
-                Filter::GameVersionStrict(game_versions)
-            } else {
-                Filter::GameVersionMinor(game_versions)
-            },
-        ];
+        let filters = vec![if strict {
+            Filter::GameVersionStrict(game_versions)
+        } else {
+            Filter::GameVersionMinor(game_versions)
+        }];
 
         Self {
             name,
@@ -96,15 +98,13 @@ impl Profile {
         name: String,
         identifier: ModIdentifier,
         slug: String,
-        override_filters: bool,
-        filters: Vec<Filter>,
+        // filters: Vec<Filter>,
     ) {
         self.mods.push(Mod {
             name,
             slug: Some(slug),
             identifier,
-            filters,
-            override_filters,
+            // filters,
             // check_game_version: None,
         })
     }
@@ -119,42 +119,29 @@ pub struct Mod {
     // since the slug field didn't exist in older ferium versions
     #[serde(skip_serializing_if = "Option::is_none")]
     pub slug: Option<String>,
-
-    /// Custom filters that apply only for this mod
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    #[serde(default)]
-    pub filters: Vec<Filter>,
-
-    /// Whether the filters specified above replace or apply with the profile's filters
-    #[serde(skip_serializing_if = "is_false")]
-    #[serde(default)]
-    pub override_filters: bool,
-
+    // Custom filters that apply only for this mod
+    // #[serde(skip_serializing_if = "Vec::is_empty")]
+    // #[serde(default)]
+    // pub filters: Vec<Filter>,
+    // Whether the filters specified above replace or apply with the profile's filters
+    // #[serde(skip_serializing_if = "is_false")]
+    // #[serde(default)]
+    // pub override_filters: bool,
     // Kept for backwards compatibility reasons
     // #[serde(skip_serializing)]
     // check_game_version: Option<bool>,
 }
 
 impl Mod {
-    pub fn new(
-        name: String,
-        identifier: ModIdentifier,
-        filters: Vec<Filter>,
-        override_filters: bool,
-    ) -> Self {
+    pub fn new(name: String, identifier: ModIdentifier, filters: Vec<Filter>) -> Self {
         Self {
             name,
             slug: None,
             identifier,
-            filters,
-            override_filters,
+            // filters,
             // check_game_version: None,
         }
     }
-}
-
-const fn is_false(b: &bool) -> bool {
-    !*b
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]

@@ -22,14 +22,31 @@
     - [x] i think it should only collapse if there is folders nested with the same name
     - [x] i think it should only collapse when the archive has a single folder in it with the same name as the archive
 
-- [ ] dont move archives to SPT folder for extraction, keep that in another folder, consider the root SPT(output_dir) folder as vital
+- [ ] dont move archives to SPT folder for extraction, keep that in another folder, consider the root SPT(output_dir) folder as vital, aswell as the spt folder inside Bepinex/plugins
 
 # current
 
-- [ ] fix some mods
-    - [ ] Ram Cleaner Fix 1.2.2 - CactusPie/SPT-RamCleanerInterval
+- [ ] split up download and install commands from upgrade, and make upgrade just call them both
+    - [ ] also rename upgrade to update
+
+- [ ] make autocompletions work for clap
+
+- [ ] add an option for the add subcommand to accept a file that has a list of mods to add
+    - doesnt work because the indentifiers vec wants at least one mod
+    - [ ] need another subcommand?
+
+- [ ] make the profile switch command remove the old mods from the old profile
+    - [ ] or at least warn the user that they need to do that manually
+
+- [ ] add checks before downloading/extracting/moving files to see if there is enough space on the drive
+
+- [ ] add checks before running any command  to see if the output_dir is a valid SPT installation
+    - [ ] check for the right exes in the root
+
+- [x] fix some mods
+    - [x] Ram Cleaner Fix 1.2.2 - CactusPie/SPT-RamCleanerInterval
         - no zip, just a dll file
-    - [ ] space-commits/SPT-FOV-Fix
+    - [x] space-commits/SPT-FOV-Fix
         - dll file in a zip that needs to be moved to bepinex/plugins
         - works with ui fixes tho, hmm...
         - where do the files from extract_temp get moved in the code??? log message for that is "installing extracted contents"
@@ -57,13 +74,11 @@
 - [ ] handle rate limit error, also stop at the first one
     - [ ] add a rate limit request when fetching fails with that error message to get reset time stamp
 
-
 - [ ] fix game versions filter bullshit somehow
     - [x] somewhat fixed, selection algo is better for sure
     - [ ] proper rework to get rid of all the filters eventually and just care about versions with a proper impl
     - [ ] more checks for spt version, description of release, maybe even scrape hub page (unlikely)
     - [ ] add mode where releases without a version are not installed until confirmed by the user, also show a link that opens a google search with that mod already entered
-
 
 
 # future

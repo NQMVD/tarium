@@ -40,25 +40,22 @@ pub enum SubCommands {
     */
     /// Add mods to the profile
     Add {
-        /// The identifier(s) of the mod/project/repository
+        /// The identifier(s) of the repository
         ///
-        /// The Modrinth project ID is specified at the bottom of the left sidebar under 'Technical information'.
-        /// You can also use the project slug in the URL.
-        /// The Curseforge project ID is specified at the top of the right sidebar under 'About Project'.
-        /// The GitHub identifier is the repository's full name, e.g. `gorilla-devs/ferium`.
+        /// The GitHub identifier is the repository's full name, e.g. `Solarint/SAIN`.
         #[clap(required = true)]
         identifiers: Vec<String>,
 
         /// Temporarily ignore game version and mod loader checks and add the mod anyway
-        #[clap(long, short, visible_alias = "override")]
+        #[clap(long, short, visible_alias = "no-checks")]
         force: bool,
 
-        /// Pin a mod to a specific version
+        // Load from a file containing a list of identifiers (one per line)
+        // #[clap(long, short, visible_alias = "file")]
+        // file: Option<PathBuf>,
+        /// Pin a mod to a specific version - CURRENTLY DISABLED
         #[clap(long, short, visible_alias = "lock")]
         pin: Option<String>,
-
-        #[command(flatten)]
-        filters: FilterArguments,
     },
     /// Print shell auto completions for the specified shell
     Complete {
@@ -88,13 +85,13 @@ pub enum SubCommands {
     Profiles,
     /// Remove mods and/or repositories from the profile.
     /// Optionally, provide a list of names or IDs of the mods to remove.
-    #[clap(visible_alias = "rm")]
+    #[clap(visible_aliases = ["rm", "delete"])]
     Remove {
         /// List of project IDs or case-insensitive names of mods to remove
         mod_names: Vec<String>,
     },
     /// Download and install the latest compatible version of your mods
-    #[clap(visible_aliases = ["download", "install"])]
+    #[clap(visible_aliases = ["download", "install", "update"])]
     Upgrade {
         /// Skip downloading and only install mods already present in the MODS directory
         #[clap(long, short, visible_aliases = ["local", "offline", "no-download"])]

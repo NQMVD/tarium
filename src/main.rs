@@ -200,17 +200,9 @@ async fn actual_main(mut cli_app: Tarium) -> Result<()> {
             identifiers,
             force,
             pin,
-            filters,
         } => {
             let profile = get_active_profile(&mut config)?;
-            let override_profile = filters.override_profile;
-            let filters: Vec<_> = filters.into();
 
-            ensure!(
-                // If filters are specified, there should only be one mod
-                filters.is_empty() || identifiers.len() == 1,
-                "You can only configure filters when adding a single mod!"
-            );
             ensure!(
                 // If a pin is specified, there should only be one mod
                 pin.is_none() || identifiers.len() == 1,
@@ -235,8 +227,7 @@ async fn actual_main(mut cli_app: Tarium) -> Result<()> {
                     .collect_vec()
             };
 
-            let (successes, failures) =
-                libarov::add(profile, identifiers, !force, override_profile, filters).await?;
+            let (successes, failures) = libarov::add(profile, identifiers, !force).await?;
 
             did_add_fail = add::display_successes_failures(&successes, failures);
         }
