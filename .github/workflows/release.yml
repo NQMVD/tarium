@@ -71,7 +71,7 @@ jobs:
 
       - name: Create GitHub Release
         id: create_release
-        uses: softprops/create-release@v1
+        uses: actions/create-release@v1
         with:
           tag_name: manual-${{ github.run_id }}
           name: manual-${{ github.run_id }}
