@@ -63,7 +63,7 @@ jobs:
       - name: Verify embedded credentials
         run: |
           Write-Host "Testing embedded GitHub App credentials..."
-          .\target\release\tarium.exe auth status
+          .\target\release\tarium.exe auth
           if ($LASTEXITCODE -ne 0) {
             Write-Error "Embedded credentials test failed"
             exit 1
@@ -76,20 +76,7 @@ jobs:
         run: |
           mkdir release
           copy target\release\tarium.exe release\tarium.exe
-          if exist OPEN-CMD.bat (
-            copy OPEN-CMD.bat release\OPEN-CMD.bat
-          ) else (
-            echo @echo off>release\OPEN-CMD.bat
-            echo pushd "%%~dp0">>release\OPEN-CMD.bat
-            echo.>>release\OPEN-CMD.bat
-            echo ================= SPT Mod Manager =================>>release\OPEN-CMD.bat
-            echo Basic commands:>>release\OPEN-CMD.bat
-            echo   tarium.exe list - list installed mods>>release\OPEN-CMD.bat
-            echo ==================================================>>release\OPEN-CMD.bat
-            echo.>>release\OPEN-CMD.bat
-            echo cmd.exe /k>>release\OPEN-CMD.bat
-            echo popd>>release\OPEN-CMD.bat
-          )
+          copy OPEN-CMD.bat release\OPEN-CMD.bat
           echo exe-path=release\\tarium.exe >> %GITHUB_OUTPUT%
           echo bat-path=release\\OPEN-CMD.bat >> %GITHUB_OUTPUT%
 
