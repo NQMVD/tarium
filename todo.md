@@ -16,7 +16,13 @@
     - was just a readonly thing of .part files?
     - _sometimes_ i cannot delete folders with files/folders in them, i need to go into the most bottom folders and delete the files there, then go back up one by one to delete the mods folders
 
-- [ ] add option for upgrade subcommand to not download mods again
+- [x] add option for upgrade subcommand to not download mods again
+
+- [x] fix folder collapsing
+    - [x] i think it should only collapse if there is folders nested with the same name
+    - [x] i think it should only collapse when the archive has a single folder in it with the same name as the archive
+
+- [ ] dont move archives to SPT folder for extraction, keep that in another folder, consider the root SPT(output_dir) folder as vital
 
 # current
 

@@ -103,26 +103,23 @@ fn extract_all_archives(output_dir: &Path) -> Result<()> {
         }
     }
 
+    let mut installation_errors = Vec::new();
+    let mut move_errors = Vec::new();
+
     for entry in fs::read_dir(output_dir)? {
         let entry = entry?;
         let path = entry.path();
         if path.is_file() {
             if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
                 match ext.to_ascii_lowercase().as_str() {
-                    "zip" => {
-                        if let Err(e) = extract_zip(&path, output_dir) {
-                            println!(
-                                "{} Failed extracting {}: {}",
-                                CROSS.red(),
-                                path.file_name().unwrap_or_default().to_string_lossy(),
-                                e
-                            );
-                        } else {
+                    "zip" => match extract_zip(&path, output_dir) {
+                        Ok(_) => {
                             if let Err(e) = move_processed_archive(&path, &archive_store) {
+                                move_errors.push((path.clone(), e));
                                 println!(
                                     "{} Extracted (move failed: {}) {}",
                                     CROSS.red(),
-                                    e,
+                                    move_errors.last().unwrap().1,
                                     path.file_name().unwrap_or_default().to_string_lossy()
                                 );
                             } else {
@@ -136,21 +133,24 @@ fn extract_all_archives(output_dir: &Path) -> Result<()> {
                                 );
                             }
                         }
-                    }
-                    "7z" => {
-                        if let Err(e) = extract_7z(&path, output_dir) {
+                        Err(e) => {
+                            installation_errors.push((path.clone(), e));
                             println!(
                                 "{} Failed extracting {}: {}",
                                 CROSS.red(),
                                 path.file_name().unwrap_or_default().to_string_lossy(),
-                                e
+                                installation_errors.last().unwrap().1
                             );
-                        } else {
+                        }
+                    },
+                    "7z" => match extract_7z(&path, output_dir) {
+                        Ok(_) => {
                             if let Err(e) = move_processed_archive(&path, &archive_store) {
+                                move_errors.push((path.clone(), e));
                                 println!(
                                     "{} Extracted (move failed: {}) {}",
                                     CROSS.red(),
-                                    e,
+                                    move_errors.last().unwrap().1,
                                     path.file_name().unwrap_or_default().to_string_lossy()
                                 );
                             } else {
@@ -164,12 +164,83 @@ fn extract_all_archives(output_dir: &Path) -> Result<()> {
                                 );
                             }
                         }
+                        Err(e) => {
+                            installation_errors.push((path.clone(), e));
+                            println!(
+                                "{} Failed extracting {}: {}",
+                                CROSS.red(),
+                                path.file_name().unwrap_or_default().to_string_lossy(),
+                                installation_errors.last().unwrap().1
+                            );
+                        }
+                    },
+                    _ => {
+                        // Not an archive we handle
+                        debug!(SCOPE = "subcommands::upgrade", path:display = path.display().to_string(); "skipping non-archive file for now");
                     }
-                    _ => {}
                 }
             }
         }
     }
+
+    // Report installation errors
+    if !installation_errors.is_empty() {
+        for (path, err) in &installation_errors {
+            // Check if this is a "no components" error vs other errors
+            if err
+                .to_string()
+                .contains("no mod components found to install")
+            {
+                debug!(SCOPE = "subcommands::upgrade", path:display = path.display().to_string(), error:display = err.to_string(); "mod archive had no installable components - likely wrapper folder issue");
+            } else {
+                println!(
+                    "{} Failed to install {}: {}",
+                    CROSS.red(),
+                    path.file_name().unwrap_or_default().to_string_lossy(),
+                    err
+                );
+            }
+        }
+
+        // Only fail for non-wrapper related errors
+        let critical_errors: Vec<_> = installation_errors
+            .iter()
+            .filter(|(_, err)| {
+                !err.to_string()
+                    .contains("no mod components found to install")
+            })
+            .collect();
+
+        if !critical_errors.is_empty() {
+            let error_details = critical_errors
+                .iter()
+                .map(|(path, err)| {
+                    format!(
+                        "  - {}: {}",
+                        path.file_name().unwrap_or_default().to_string_lossy(),
+                        err
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join("\n");
+
+            return Err(anyhow!(
+                "Failed to install {} mod archive(s) due to critical errors:\n{}",
+                critical_errors.len(),
+                error_details
+            ));
+        }
+    }
+
+    // Move errors are warnings but don't stop the process
+    if !move_errors.is_empty() {
+        println!(
+            "{} {} archives were extracted successfully but could not be moved to MODS directory",
+            "Warning:".yellow(),
+            move_errors.len()
+        );
+    }
+
     Ok(())
 }
 
@@ -278,19 +349,30 @@ fn install_extracted(temp_dir: &Path, output_dir: &Path) -> Result<()> {
 
     let mut installation_count = 0;
 
-    // Collapse single-folder wrappers
+    // Collapse single-folder wrappers with same name as archive
     let mut root = temp_dir.to_path_buf();
+    let original_root = root.clone();
+
+    // Get the archive name without extension for comparison
+    let archive_name = temp_dir.file_name().and_then(|n| n.to_str()).unwrap_or("");
+
+    // Only collapse if there's a single directory with the same name as the archive
     match fs::read_dir(&root) {
         Ok(entries) => {
             let collected: Vec<_> = entries.filter_map(|e| e.ok()).collect();
-            if collected.len() == 1
-                && collected[0]
-                    .file_type()
-                    .map(|t| t.is_dir())
-                    .unwrap_or(false)
-            {
-                root = collected[0].path();
-                debug!(SCOPE = "subcommands::upgrade", original_root:display = temp_dir.display().to_string(), new_root:display = root.display().to_string(); "collapsed single-folder wrapper");
+
+            // Check for single directory with same name as archive
+            if collected.len() == 1 {
+                let entry = &collected[0];
+                if entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+                    if let Some(dir_name) = entry.file_name().to_str() {
+                        // Only collapse if directory name matches archive name (wrapper folder pattern)
+                        if dir_name == archive_name {
+                            root = entry.path();
+                            debug!(SCOPE = "subcommands::upgrade", original_root:display = original_root.display().to_string(), new_root:display = root.display().to_string(); "collapsed same-name wrapper folder");
+                        }
+                    }
+                }
             }
         }
         Err(e) => {
@@ -311,6 +393,8 @@ fn install_extracted(temp_dir: &Path, output_dir: &Path) -> Result<()> {
                 return Err(e);
             }
         }
+    } else {
+        debug!(SCOPE = "subcommands::upgrade", root:display = root.display().to_string(); "no BepInEx directory found in extracted mod");
     }
 
     // Merge user mods
@@ -326,12 +410,14 @@ fn install_extracted(temp_dir: &Path, output_dir: &Path) -> Result<()> {
                 return Err(e);
             }
         }
+    } else {
+        debug!(SCOPE = "subcommands::upgrade", root:display = root.display().to_string(); "no user directory found in extracted mod");
     }
 
     // Top-level dlls => BepInEx/plugins
     let plugins_dir = output_dir.join("BepInEx").join("plugins");
     if let Err(e) = create_dir_all(&plugins_dir) {
-        debug!(SCOPE = "subcommands::upgrade", plugins_dir:display = plugins_dir.display().to_string(), error:display = e.to_string(); "failed to create plugins directory");
+        warn!(SCOPE = "subcommands::upgrade", plugins_dir:display = plugins_dir.display().to_string(), error:display = e.to_string(); "failed to create plugins directory");
         return Err(e.into());
     }
 
@@ -354,7 +440,7 @@ fn install_extracted(temp_dir: &Path, output_dir: &Path) -> Result<()> {
                             dll_count += 1;
                         }
                         Err(e) => {
-                            debug!(SCOPE = "subcommands::upgrade", from:display = p.display().to_string(), to:display = target.display().to_string(), error:display = e.to_string(); "failed to copy DLL plugin");
+                            warn!(SCOPE = "subcommands::upgrade", from:display = p.display().to_string(), to:display = target.display().to_string(), error:display = e.to_string(); "failed to copy DLL plugin");
                             return Err(e.into());
                         }
                     }
@@ -362,7 +448,7 @@ fn install_extracted(temp_dir: &Path, output_dir: &Path) -> Result<()> {
             }
         }
         Err(e) => {
-            debug!(SCOPE = "subcommands::upgrade", root:display = root.display().to_string(), error:display = e.to_string(); "failed to read root directory for DLL scanning");
+            warn!(SCOPE = "subcommands::upgrade", root:display = root.display().to_string(), error:display = e.to_string(); "failed to read root directory for DLL scanning");
             return Err(e.into());
         }
     }
@@ -373,7 +459,7 @@ fn install_extracted(temp_dir: &Path, output_dir: &Path) -> Result<()> {
     }
 
     if installation_count == 0 {
-        warn!(SCOPE = "subcommands::upgrade", temp_dir:display = temp_dir.display().to_string(); "no mod components found to install");
+        debug!(SCOPE = "subcommands::upgrade", temp_dir:display = temp_dir.display().to_string(); "no mod components found to install - this may indicate wrapper folder issues");
     } else {
         info!(SCOPE = "subcommands::upgrade", components = installation_count, output_dir:display = output_dir.display().to_string(); "successfully installed mod components");
     }
