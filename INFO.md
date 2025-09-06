@@ -17,7 +17,7 @@ That will have to wait tho, until the program is more polished and tested.
 > I **highly** recommend creating a copy of your SPT installation before you use tarium right now.
 > Not because the program isn't safe, but it _is_ considered experimental and in such cases it's always advised to make a backup.
 
-- Just download both files (tarium.exe and OPEN-CMD.bat) from [this](https://github.com/NQMVD/tarium/releases) page under "Assets" and place them both in your SPT folder, next to the SPT Launcher and Server exes.
+- Just download both files (tarium.exe and OPEN-CMD.bat) from [this](https://github.com/NQMVD/tarium/releases/tag/v0.1.0-alpha) page under "Assets" and place them both in your SPT folder, next to the SPT Launcher and Server exes.
 - That's it.
 
 > But if you know what you're doing, you can install it where-ever-you-want and run it from where-ever-you-want, that's why profiles have the SPT dir stored.
