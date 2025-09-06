@@ -3,9 +3,7 @@
 use crate::DEFAULT_PARALLEL_TASKS;
 use clap::{Args, Parser, Subcommand, ValueEnum, ValueHint};
 use clap_complete::Shell;
-use libarov::config::{
-    filters::{self, Filter}
-};
+use libarov::config::filters::{self, Filter};
 use std::path::PathBuf;
 
 #[derive(Clone, Debug, Parser)]
@@ -97,7 +95,11 @@ pub enum SubCommands {
     },
     /// Download and install the latest compatible version of your mods
     #[clap(visible_aliases = ["download", "install"])]
-    Upgrade,
+    Upgrade {
+        /// Skip downloading and only install mods already present in the MODS directory
+        #[clap(long, short, visible_aliases = ["local", "offline", "no-download"])]
+        local_only: bool,
+    },
 }
 
 #[derive(Clone, Debug, Subcommand)]

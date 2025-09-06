@@ -2,7 +2,7 @@
 
 use crate::{
     actual_main,
-    cli::{Tarium, FilterArguments, ProfileSubCommands, SubCommands},
+    cli::{FilterArguments, ProfileSubCommands, SubCommands, Tarium},
 };
 use std::{
     env::current_dir,
@@ -318,15 +318,29 @@ async fn list_profiles() {
     ));
 }
 
-
 #[tokio::test(flavor = "multi_thread")]
 async fn upgrade() {
     assert!(matches!(
-        actual_main(get_args(SubCommands::Upgrade, Some("one_profile_full"))).await,
+        actual_main(get_args(
+            SubCommands::Upgrade { local_only: false },
+            Some("one_profile_full")
+        ))
+        .await,
         Ok(()),
     ));
 }
 
+#[tokio::test(flavor = "multi_thread")]
+async fn upgrade_local_only() {
+    assert!(matches!(
+        actual_main(get_args(
+            SubCommands::Upgrade { local_only: true },
+            Some("one_profile_full")
+        ))
+        .await,
+        Ok(()),
+    ));
+}
 
 #[tokio::test(flavor = "multi_thread")]
 async fn profile_switch() {

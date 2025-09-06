@@ -13,7 +13,7 @@ use libarov::{
     },
     upgrade::{mod_downloadable, DownloadData},
 };
-use log::{debug, info};
+use log::{debug, info, warn};
 use parking_lot::Mutex;
 use sevenz_rust::decompress_file;
 use std::collections::HashSet;
@@ -264,6 +264,8 @@ fn extract_zip(zip_path: &Path, output_dir: &Path) -> Result<()> {
         }
     }
 
+    info!(SCOPE = "subcommands::upgrade", path:display = temp_dir.display().to_string(); "installing extracted contents");
+
     install_extracted(&temp_dir, output_dir)?;
 
     fs::remove_dir_all(&temp_dir)?;
@@ -272,47 +274,108 @@ fn extract_zip(zip_path: &Path, output_dir: &Path) -> Result<()> {
 }
 
 fn install_extracted(temp_dir: &Path, output_dir: &Path) -> Result<()> {
+    debug!(SCOPE = "subcommands::upgrade", temp_dir:display = temp_dir.display().to_string(), output_dir:display = output_dir.display().to_string(); "starting mod installation from extracted contents");
+
+    let mut installation_count = 0;
+
     // Collapse single-folder wrappers
     let mut root = temp_dir.to_path_buf();
-    if let Ok(entries) = fs::read_dir(&root) {
-        let collected: Vec<_> = entries.filter_map(|e| e.ok()).collect();
-        if collected.len() == 1
-            && collected[0]
-                .file_type()
-                .map(|t| t.is_dir())
-                .unwrap_or(false)
-        {
-            root = collected[0].path();
+    match fs::read_dir(&root) {
+        Ok(entries) => {
+            let collected: Vec<_> = entries.filter_map(|e| e.ok()).collect();
+            if collected.len() == 1
+                && collected[0]
+                    .file_type()
+                    .map(|t| t.is_dir())
+                    .unwrap_or(false)
+            {
+                root = collected[0].path();
+                debug!(SCOPE = "subcommands::upgrade", original_root:display = temp_dir.display().to_string(), new_root:display = root.display().to_string(); "collapsed single-folder wrapper");
+            }
+        }
+        Err(e) => {
+            debug!(SCOPE = "subcommands::upgrade", temp_dir:display = temp_dir.display().to_string(), error:display = e.to_string(); "failed to read temp directory for wrapper collapse");
         }
     }
 
     // Merge BepInEx if present
     let bep = root.join("BepInEx");
     if bep.exists() {
-        copy_dir_recursive(&bep, &output_dir.join("BepInEx"))?;
+        match copy_dir_recursive(&bep, &output_dir.join("BepInEx")) {
+            Ok(_) => {
+                info!(SCOPE = "subcommands::upgrade", from:display = bep.display().to_string(), to:display = output_dir.join("BepInEx").display().to_string(); "installed BepInEx directory");
+                installation_count += 1;
+            }
+            Err(e) => {
+                debug!(SCOPE = "subcommands::upgrade", from:display = bep.display().to_string(), to:display = output_dir.join("BepInEx").display().to_string(), error:display = e.to_string(); "failed to copy BepInEx directory");
+                return Err(e);
+            }
+        }
     }
+
     // Merge user mods
     let user_dir = root.join("user");
     if user_dir.exists() {
-        copy_dir_recursive(&user_dir, &output_dir.join("user"))?;
-    }
-    // Top-level dlls => BepInEx/plugins
-    let plugins_dir = output_dir.join("BepInEx").join("plugins");
-    create_dir_all(&plugins_dir)?;
-    if let Ok(entries) = fs::read_dir(&root) {
-        for entry in entries.filter_map(|e| e.ok()) {
-            let p = entry.path();
-            if p.is_file()
-                && p.extension()
-                    .and_then(|e| e.to_str())
-                    .map(|e| e.eq_ignore_ascii_case("dll"))
-                    .unwrap_or(false)
-            {
-                let target = plugins_dir.join(p.file_name().unwrap());
-                fs_copy(&p, &target)?;
-                normalize_permissions(&target);
+        match copy_dir_recursive(&user_dir, &output_dir.join("user")) {
+            Ok(_) => {
+                info!(SCOPE = "subcommands::upgrade", from:display = user_dir.display().to_string(), to:display = output_dir.join("user").display().to_string(); "installed user directory");
+                installation_count += 1;
+            }
+            Err(e) => {
+                debug!(SCOPE = "subcommands::upgrade", from:display = user_dir.display().to_string(), to:display = output_dir.join("user").display().to_string(), error:display = e.to_string(); "failed to copy user directory");
+                return Err(e);
             }
         }
+    }
+
+    // Top-level dlls => BepInEx/plugins
+    let plugins_dir = output_dir.join("BepInEx").join("plugins");
+    if let Err(e) = create_dir_all(&plugins_dir) {
+        debug!(SCOPE = "subcommands::upgrade", plugins_dir:display = plugins_dir.display().to_string(), error:display = e.to_string(); "failed to create plugins directory");
+        return Err(e.into());
+    }
+
+    let mut dll_count = 0;
+    match fs::read_dir(&root) {
+        Ok(entries) => {
+            for entry in entries.filter_map(|e| e.ok()) {
+                let p = entry.path();
+                if p.is_file()
+                    && p.extension()
+                        .and_then(|e| e.to_str())
+                        .map(|e| e.eq_ignore_ascii_case("dll"))
+                        .unwrap_or(false)
+                {
+                    let target = plugins_dir.join(p.file_name().unwrap());
+                    match fs_copy(&p, &target) {
+                        Ok(_) => {
+                            normalize_permissions(&target);
+                            debug!(SCOPE = "subcommands::upgrade", from:display = p.display().to_string(), to:display = target.display().to_string(); "installed DLL plugin");
+                            dll_count += 1;
+                        }
+                        Err(e) => {
+                            debug!(SCOPE = "subcommands::upgrade", from:display = p.display().to_string(), to:display = target.display().to_string(), error:display = e.to_string(); "failed to copy DLL plugin");
+                            return Err(e.into());
+                        }
+                    }
+                }
+            }
+        }
+        Err(e) => {
+            debug!(SCOPE = "subcommands::upgrade", root:display = root.display().to_string(), error:display = e.to_string(); "failed to read root directory for DLL scanning");
+            return Err(e.into());
+        }
+    }
+
+    if dll_count > 0 {
+        info!(SCOPE = "subcommands::upgrade", count = dll_count, plugins_dir:display = plugins_dir.display().to_string(); "installed DLL plugins");
+        installation_count += 1;
+    }
+
+    if installation_count == 0 {
+        warn!(SCOPE = "subcommands::upgrade", temp_dir:display = temp_dir.display().to_string(); "no mod components found to install");
+    } else {
+        info!(SCOPE = "subcommands::upgrade", components = installation_count, output_dir:display = output_dir.display().to_string(); "successfully installed mod components");
     }
 
     Ok(())
@@ -428,45 +491,98 @@ pub async fn get_platform_downloadables(profile: &Profile) -> Result<(Vec<Downlo
     Ok((to_download, error))
 }
 
-pub async fn upgrade(profile: &Profile) -> Result<()> {
+pub async fn upgrade(profile: &Profile, local_only: bool) -> Result<()> {
     ensure_required_dirs(&profile.output_dir)?;
-    let (mut to_download, error) = get_platform_downloadables(profile).await?;
-    let mut to_install = Vec::new();
-    if profile.output_dir.join("user").exists() {
-        for file in read_dir(profile.output_dir.join("user"))? {
-            let file = file?;
-            let path = file.path();
+
+    if local_only {
+        info!(SCOPE = "subcommands::upgrade", output_dir:display = profile.output_dir.display().to_string(); "running upgrade in local-only mode, scanning MODS directory");
+
+        // Copy archives from MODS directory to output directory for processing
+        let mods_dir = profile.output_dir.join("MODS");
+        if !mods_dir.exists() {
+            println!(
+                "{}",
+                "No MODS directory found - nothing to install locally".yellow()
+            );
+            return Ok(());
+        }
+
+        let mut archive_count = 0;
+        for entry in read_dir(&mods_dir)? {
+            let entry = entry?;
+            let path = entry.path();
             if path.is_file() {
-                to_install.push((file.file_name(), path));
+                if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+                    match ext.to_ascii_lowercase().as_str() {
+                        "zip" | "7z" => {
+                            let target = profile.output_dir.join(path.file_name().unwrap());
+                            if !target.exists() {
+                                info!(SCOPE = "subcommands::upgrade", from:display = path.display().to_string(), to:display = target.display().to_string(); "copying archive from MODS for local installation");
+                                fs_copy(&path, &target)?;
+                                archive_count += 1;
+                            }
+                        }
+                        _ => {}
+                    }
+                }
             }
         }
-    }
 
-    clean(&profile.output_dir, &mut to_download, &mut to_install).await?;
-    to_download
-        .iter_mut()
-        // Download directly to the output directory
-        .map(|thing| thing.output = thing.filename().into())
-        .for_each(drop); // Doesn't drop any data, just runs the iterator
-                         // Always attempt extraction of any archives present (new or existing)
-    if to_download.is_empty() && to_install.is_empty() {
-        println!("\n{}", "All up to date!".bold());
+        if archive_count == 0 {
+            println!("{}", "No archives found in MODS directory".yellow());
+        } else {
+            println!(
+                "\n{} {} archives from MODS directory",
+                "Found".bold(),
+                archive_count
+            );
+        }
+
+        // Extract all archives (both existing and copied from MODS)
         if let Err(e) = extract_all_archives(&profile.output_dir) {
             println!("{} Failed to extract some archives: {}", CROSS.red(), e);
         }
-    } else {
-        println!("\n{}\n", "Downloading Mod Files".bold());
-        download(profile.output_dir.clone(), to_download, to_install).await?;
-        if let Err(e) = extract_all_archives(&profile.output_dir) {
-            println!("{} Failed to extract some archives: {}", CROSS.red(), e);
-        }
-    }
 
-    if error {
-        Err(anyhow!(
-            "\nCould not get the latest compatible version of some mods"
-        ))
-    } else {
         Ok(())
+    } else {
+        let (mut to_download, error) = get_platform_downloadables(profile).await?;
+        let mut to_install = Vec::new();
+        if profile.output_dir.join("user").exists() {
+            for file in read_dir(profile.output_dir.join("user"))? {
+                let file = file?;
+                let path = file.path();
+                if path.is_file() {
+                    to_install.push((file.file_name(), path));
+                }
+            }
+        }
+
+        clean(&profile.output_dir, &mut to_download, &mut to_install).await?;
+        to_download
+            .iter_mut()
+            // Download directly to the output directory
+            .map(|thing| thing.output = thing.filename().into())
+            .for_each(drop); // Doesn't drop any data, just runs the iterator
+                             // Always attempt extraction of any archives present (new or existing)
+        if to_download.is_empty() && to_install.is_empty() {
+            println!("\n{}", "All up to date!".bold());
+            if let Err(e) = extract_all_archives(&profile.output_dir) {
+                println!("{} Failed to extract some archives: {}", CROSS.red(), e);
+            }
+        } else {
+            println!("\n{}\n", "Downloading Mod Files".bold());
+            download(profile.output_dir.clone(), to_download, to_install).await?;
+            if let Err(e) = extract_all_archives(&profile.output_dir) {
+                println!("{} Failed to extract some archives: {}", CROSS.red(), e);
+            }
+        }
+
+        if error {
+            Err(anyhow!(
+                "\nCould not get the latest compatible version of some mods"
+            ))
+        } else {
+            Ok(())
+        }
     }
 }

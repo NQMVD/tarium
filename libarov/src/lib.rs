@@ -70,7 +70,13 @@ pub static BASE_DIRS: LazyLock<BaseDirs> =
     LazyLock::new(|| BaseDirs::new().expect("Could not get OS specific directories"));
 
 pub static PROJECT_DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
-    ProjectDirs::from("", "", "tarium").expect("Could not get OS specific directories")
+    // TODO: one for dev, one for release
+    if cfg!(debug_assertions) {
+        ProjectDirs::from("", "", "tarium-dev").expect("Could not get OS specific directories")
+    } else {
+        ProjectDirs::from("", "", "tarium").expect("Could not get OS specific directories")
+    }
+    // ProjectDirs::from("", "", "tarium").expect("Could not get OS specific directories")
 });
 
 /// Gets the default Minecraft instance directory based on the current compilation `target_os`
@@ -81,7 +87,7 @@ pub fn get_spt_dir() -> PathBuf {
     }
     #[cfg(target_os = "windows")]
     {
-        BASE_DIRS.data_dir().join(".minecraft")
+        BASE_DIRS.data_dir().join(".spt-tarium")
         // TODO: get current dir and check if its name is SPT
     }
     #[cfg(not(any(target_os = "macos", target_os = "windows")))]

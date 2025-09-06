@@ -347,10 +347,10 @@ async fn actual_main(mut cli_app: Tarium) -> Result<()> {
             check_empty_profile(profile)?;
             subcommands::remove(profile, mod_names)?;
         }
-        SubCommands::Upgrade => {
+        SubCommands::Upgrade { local_only } => {
             let profile = get_active_profile(&mut config)?;
             check_empty_profile(profile)?;
-            subcommands::upgrade(profile).await?;
+            subcommands::upgrade(profile, local_only).await?;
         }
     }
 

@@ -5,8 +5,8 @@
 
 - [ ] add logging for when filters couldnt match anything, or generally more logging...
     - [x] take custom logging i made from needs
-    - [ ] added more logging when filtering when adding
-    - [ ] added logging for all file io ops...
+    - [x] add more logging when filtering when adding
+    - [x] add logging for all file io ops...
 
 - [x] fix 7z? download fails for TommySoucy/MoreCheckmarks
     - [x] Add 7z extraction (e.g. sevenz-rust)
@@ -16,8 +16,18 @@
     - was just a readonly thing of .part files?
     - _sometimes_ i cannot delete folders with files/folders in them, i need to go into the most bottom folders and delete the files there, then go back up one by one to delete the mods folders
 
+- [ ] add option for upgrade subcommand to not download mods again
 
 # current
+
+- [ ] fix some mods
+    - [ ] Ram Cleaner Fix 1.2.2 - CactusPie/SPT-RamCleanerInterval
+        - no zip, just a dll file
+    - [ ] space-commits/SPT-FOV-Fix
+        - dll file in a zip that needs to be moved to bepinex/plugins
+        - works with ui fixes tho, hmm...
+        - where do the files from extract_temp get moved in the code??? log message for that is "installing extracted contents"
+
 - [x] fix fucking github lol
     - the problem is that the graphql endpoint requires auth request, unlike the rest api which has the 60/h free...x
     - [ ] dedupe the get gh releases+assets thingy
@@ -26,8 +36,7 @@
     - [x] support for checking two dirs
 
 - [ ] replace inquire with another one that doesnt suck on windows
-    - [ ] try requestty - looks nice too
-        - [ ] try its progressbars, if they suck too, remove em
+    - [ ] try requestty - input duplication bug???
     - [ ] or askr (newer and not so sophisticated)
 
 - [x] remove scan command as its not gonna work with dragged-in folders...

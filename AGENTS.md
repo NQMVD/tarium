@@ -33,5 +33,7 @@ Note: SPT-specific assets and example mods live in the `SPT/` directory and `tes
 
 - Filters accept an iterator of candidate metadata and return sets of indices that pass. The selection function intersects these sets and picks a chosen index from the remaining candidates.
 - Version groups (for `GameVersionMinor`) are cached with `OnceLock`. Agents that update external tag data should account for this caching behavior.
+- theres attributes that hide warnings in dev mode, `#[cfg_attr(debug_assertions, allow(dead_code))]`
+- for dev purposes the config dir is set to tarium-dev, for realease its just tarium
 
 This file is a concise, living summary for automated agents operating on the repository; update it as the Tarium port progresses.
