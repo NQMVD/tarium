@@ -107,9 +107,9 @@ You can just ignore it normally, but if you run into any problems, you can send 
     - [x] i think it should only collapse if there is folders nested with the same name
     - [x] i think it should only collapse when the archive has a single folder in it with the same name as the archive
 
-- [ ] add an option for the add subcommand to accept a file that has a list of mods to add
+- [x] add an option for the add subcommand to accept a file that has a list of mods to add
     - doesnt work because the indentifiers vec wants at least one mod
-    - [ ] need another subcommand?
+    - [x] need another subcommand? add-from for now.
 
 - [ ] dont move archives to SPT folder for extraction, keep that in another folder, consider the root SPT(output_dir) folder as vital, aswell as the spt folder inside Bepinex/plugins
 
@@ -125,7 +125,7 @@ You can just ignore it normally, but if you run into any problems, you can send 
 
 - [ ] add checks before downloading/extracting/moving files to see if there is enough space on the drive
 
-- [ ] add checks before running any command  to see if the output_dir is a valid SPT installation
+- [ ] add checks before running any command to see if the output_dir is a valid SPT installation
     - [ ] check for the right exes in the root
 
 - [x] fix some mods
