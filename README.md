@@ -51,26 +51,26 @@ That will have to wait tho, until the program is more polished and tested.
     - To **add a mod**, you need the **github identifier** of the mod, for example: `Solarint/SAIN`
         - the id is on the **right side of the mod page** on the SPT hub/forge, under "Github"
     - Run this to add it to your profile
-      ```
+      ```powershell
       tarium.exe add Solarint/SAIN --no-checks
       ```
     - the `--no-checks` is needed because of the ratelimits, it will skip checking if it's a valid repo, so make sure you got the right one
     - If you want to add multiple mods at once, just add more identifiers after the command like so:
-      ```
+      ```powershell
       tarium.exe add Solarint/SAIN DrakiaXYZ/SPT-Waypoints DrakiaXYZ/SPT-BigBrain --no-checks
       ```
     - until we get proper modpacks, you can also **create a text file with a list of mods** you want to add, one per line, and use the `--file` option like so:
-      ```
+      ```powershell
       tarium.exe add-from mods.txt --no-checks
       ```
 
 4. After adding all the mods you want, i recommend running `tarium.exe list` to see what you added
     - to **download and install** them, run:
-      ```
+      ```powershell
       tarium.exe download
       ```
     - you can also disable downloading, if you already ran it before (downloading also goes to the rate limit) like so:
-      ```
+      ```powershell
       tarium.exe upgrade --no-download
       ```
 
