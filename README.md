@@ -2,6 +2,8 @@
 
 [![rust badge](https://img.shields.io/static/v1?label=Made%20with&message=Rust&logo=rust&labelColor=e82833&color=b11522)](https://www.rust-lang.org)
 
+![screenshot](./../screenshots/add-and-install.png)
+
 Alright so... here's a mod manager i guess.
 
 Disclaimer: it's a simple one, as of right now you still have to go to the mods page on the hub to get the ID.
