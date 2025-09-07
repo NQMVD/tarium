@@ -11,9 +11,10 @@ but after you added them to your list, it's all just one command to download and
 
 I'm still working on it, but in testing it works just fine with alot of mods for 3.11
 The main limitation right now is that it only works with Github (the place where devs actually upload the mods) which means:
-- no connection to the SPT hub -> no access to the description they have, only the github readme one which is mostly not even present
+- no connection to the SPT hub/forge -> no access to the description they have, only the github readme one which is mostly not even present
 - because of no proper conventions sometimes no way to tell the SPT version the mod is for...
-- HEAVY ratelimits for now, as i haven't registered the App on Github yet, we're talking 60 requests/h (i'll include some tips for that later, also this will change with both the registration and further improvements of the app).
+- ~HEAVY ratelimits for now, as i haven't registered the App on Github yet, we're talking 60 requests/h (i'll include some tips for that later, also this will change with both the registration and further improvements of the app)~
+- Update: i registered the app, so the ratelimit is now 5000 requests/h. It will fall back to IP-based limits after that, which is 60/h again. So still not perfect, but way better.
 
 > At the bottom of this is a todo list that i maintain while working on this, just so you get an idea of how the current state is.
 
@@ -36,27 +37,36 @@ That will have to wait tho, until the program is more polished and tested.
 1. Open the terminal by opening the OPEN-CMD.bat file (just double click)
 
 2. Create a profile with `tarium.exe profile create`
-    - when the file explorer pops up, go to your SPT installation and click "Select" at the bottom right
-    - there might be a warning in the terminal TODO
-    - give it a name you like, not linked to your SPT profile btw
-    - select the version youre playing on. DISCLAIMER: i only tried 3.11, it might not work with 3.10 or 3.9, let me know if thats the case.
+    - when the file explorer pops up, **go to your SPT installation** and click "Select" at the bottom right
+    - there might be a warning in the terminal, it's just an extra hint that might help you avoid mistakes, as it follows the SPTs installation guide for naming.
+    - give it a **name** you like, not linked to your SPT profile btw
+    - select the **version** youre playing on.
+
+> DISCLAIMER: i only tried 3.11, it might not work with 3.10 or 3.9, let me know if thats the case.
+> Also, because of a weird filter system of the ferium base code, **the patch versions are ignored**, so 3.11.3 and 3.11.4 for example are both just 3.11.
+> This will change in the future, but for now it should be fine. It's just there for filtering github releases anyways.
 
 3. Now start adding mods.
-    - To add a mod, you need the github identifier of the mod, for example: `Solarint/SAIN`
-        - the id is on the right side of the mod page on the SPT hub, under "Github"
+    - To **add a mod**, you need the **github identifier** of the mod, for example: `Solarint/SAIN`
+        - the id is on the **right side of the mod page** on the SPT hub/forge, under "Github"
     - Run `tarium.exe add Solarint/SAIN --no-checks` to add it to your profile
     - the `--no-checks` is needed because of the ratelimits, it will skip checking if it's a valid repo, so make sure you got the right one
     - If you want to add multiple mods at once, just add more identifiers after the command like so:
         - `tarium.exe add Solarint/SAIN DrakiaXYZ/SPT-Waypoints DrakiaXYZ/SPT-BigBrain --no-checks`
-    - until we get proper modpacks, you can also create a text file with a list of mods you want to add, one per line, and use the `--file` option like so:
+    - until we get proper modpacks, you can also **create a text file with a list of mods** you want to add, one per line, and use the `--file` option like so:
         - `tarium.exe add-from mods.txt --no-checks`
 
 4. After adding all the mods you want, i recommend running `tarium.exe list` to see what you added
-    - then run `tarium.exe download` to download and install them
+    - then run `tarium.exe download` to **download and install** them
     - you can also disable downloading, if you already ran it before (downloading also goes to the rate limit) like so:
         - `tarium.exe upgrade --no-download`
 
 5. Finally: start SPT and enjoy the mods :)
+
+> Keep in mind that some mods might not work together, or might need additional steps to get them working.
+> Always read the mod description on the hub/forge page for more information.
+> (Kind of a good system right now: go to the mod page, read the description, get the id, add it to tarium, done.)
+> More about mods [here](https://wiki.sp-tarkov.com/en/Installing_Mods)
 
 ### How to update:
 
@@ -176,11 +186,14 @@ You can just ignore it normally, but if you run into any problems, you can send 
 
 ### Future
 
+- [ ] add a field in mod storage for the hub/forge link for convenience
+
 - [ ] add a black list for shit like SVM who needs another app to setup fully?!
 
 - [ ] add checks for incompatible fields in package.json
 
 - [ ] hook up the hub as api?
+    - [ ] found the forge api, no downloads via that one tho i think, don't get your hopes up just yet...
 
 - [ ] enable/disable mods
     - [ ] like curseforge maybe
