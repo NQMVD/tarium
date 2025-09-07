@@ -6,10 +6,10 @@
 
 Alright so... here's a mod manager i guess.
 
-Disclaimer: it's a simple one, as of right now you still have to go to the mods page on the hub to get the ID.
+Disclaimer: it's a simple one, as of right now you still have to go to the mods page on the hub to get the ID.  
 but after you added them to your list, it's all just one command to download and install them. No need to extract, drag and drop them.
 
-I'm still working on it, but in testing it works just fine with alot of mods for 3.11
+I'm still working on it, but in testing it works just fine with alot of mods for 3.11  
 The main limitation right now is that it only works with Github (the place where devs actually upload the mods) which means:
 - no connection to the SPT hub/forge -> no access to the description they have, only the github readme one which is mostly not even present
 - because of no proper conventions sometimes no way to tell the SPT version the mod is for...
@@ -19,11 +19,12 @@ The main limitation right now is that it only works with Github (the place where
 > At the bottom of this is a todo list that i maintain while working on this, just so you get an idea of how the current state is.
 
 This is a fork btw, i took the [ferium](https://github.com/gorilla-devs/ferium) tool as a base and swapped/ripped out the parts related to minecraft for their SPT counterparts. Mostly for the profile and github code it had, but also because i like terminal tools and LLMs work really well with Rust).
-For now its just the terminal tool, but i already have plans to create a Wrapper around it, to give you guys a proper App you can click and drag around in. It will use a framework called eframe which in other cases showed crazy minimal resource usage, to not impact game performance.
+
+For now its just the terminal tool, but i already have plans to create a Wrapper around it, to give you guys a proper App you can click and drag around in. It will use a framework called eframe which in other cases showed crazy minimal resource usage, to not impact game performance.  
 That will have to wait tho, until the program is more polished and tested.
 
 ## How to install it:
-> I **highly** recommend creating a copy of your SPT installation before you use tarium right now.
+> I **highly** recommend creating a copy of your SPT installation before you use tarium right now.  
 > Not because the program isn't safe, but it _is_ considered experimental and in such cases it's always advised to make a backup.
 
 - Just download both files (tarium.exe and OPEN-CMD.bat) from [this](https://github.com/NQMVD/tarium/releases) page under "Assets" and place them both in your SPT folder, next to the SPT Launcher and Server exes.
@@ -42,8 +43,8 @@ That will have to wait tho, until the program is more polished and tested.
     - give it a **name** you like, not linked to your SPT profile btw
     - select the **version** youre playing on.
 
-> DISCLAIMER: i only tried 3.11, it might not work with 3.10 or 3.9, let me know if thats the case.
-> Also, because of a weird filter system of the ferium base code, **the patch versions are ignored**, so 3.11.3 and 3.11.4 for example are both just 3.11.
+> DISCLAIMER: i only tried 3.11, it might not work with 3.10 or 3.9, let me know if thats the case.  
+> Also, because of a weird filter system of the ferium base code, **the patch versions are ignored**, so 3.11.3 and 3.11.4 for example are both just 3.11.  
 > This will change in the future, but for now it should be fine. It's just there for filtering github releases anyways.
 
 3. Now start adding mods.
@@ -63,9 +64,9 @@ That will have to wait tho, until the program is more polished and tested.
 
 5. Finally: start SPT and enjoy the mods :)
 
-> Keep in mind that some mods might not work together, or might need additional steps to get them working.
-> Always read the mod description on the hub/forge page for more information.
-> (Kind of a good system right now: go to the mod page, read the description, get the id, add it to tarium, done.)
+> Keep in mind that some mods might not work together, or might need additional steps to get them working.  
+> Always read the mod description on the hub/forge page for more information.  
+> (Kind of a good system right now: go to the mod page, read the description, get the id, add it to tarium, done.)  
 > More about mods [here](https://wiki.sp-tarkov.com/en/Installing_Mods)
 
 ### How to update:
