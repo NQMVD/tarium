@@ -50,17 +50,29 @@ That will have to wait tho, until the program is more polished and tested.
 3. Now start adding mods.
     - To **add a mod**, you need the **github identifier** of the mod, for example: `Solarint/SAIN`
         - the id is on the **right side of the mod page** on the SPT hub/forge, under "Github"
-    - Run `tarium.exe add Solarint/SAIN --no-checks` to add it to your profile
+    - Run this to add it to your profile
+      ```
+      tarium.exe add Solarint/SAIN --no-checks
+      ```
     - the `--no-checks` is needed because of the ratelimits, it will skip checking if it's a valid repo, so make sure you got the right one
     - If you want to add multiple mods at once, just add more identifiers after the command like so:
-        - `tarium.exe add Solarint/SAIN DrakiaXYZ/SPT-Waypoints DrakiaXYZ/SPT-BigBrain --no-checks`
+      ```
+      tarium.exe add Solarint/SAIN DrakiaXYZ/SPT-Waypoints DrakiaXYZ/SPT-BigBrain --no-checks
+      ```
     - until we get proper modpacks, you can also **create a text file with a list of mods** you want to add, one per line, and use the `--file` option like so:
-        - `tarium.exe add-from mods.txt --no-checks`
+      ```
+      tarium.exe add-from mods.txt --no-checks
+      ```
 
 4. After adding all the mods you want, i recommend running `tarium.exe list` to see what you added
-    - then run `tarium.exe download` to **download and install** them
+    - to **download and install** them, run:
+      ```
+      tarium.exe download
+      ```
     - you can also disable downloading, if you already ran it before (downloading also goes to the rate limit) like so:
-        - `tarium.exe upgrade --no-download`
+      ```
+      tarium.exe upgrade --no-download
+      ```
 
 5. Finally: start SPT and enjoy the mods :)
 
@@ -71,7 +83,7 @@ That will have to wait tho, until the program is more polished and tested.
 
 ### How to update:
 
-To update the mods just run `tarium.exe download` or `tarium.exe upgrade` (might be easier to remember).
+To update the mods just run `tarium.exe download` or `tarium.exe update` (might be easier to remember).
 
 To update tarium itself, just download the new version from the releases page and replace the old tarium.exe with the new one.
 I'll create an update-self command later, but for now this is the only way.
@@ -83,8 +95,8 @@ There are alot of aliases for the commands too, you can see them all by running 
 The config file is located at "C:\Users\USER\AppData\Roaming\tarium\config\config.json" where USER is your windows username.
 It contains all the profiles with their mod lists, but also the SPT folder you chose. Keep that in mind when you move your SPT folder somewhere else! (although it doesn't break it, it just won't work)
 
-I added extensive logging to tarium, mostly for development but it also shows vital debugging information.
-If you run into any problems, you can re-run a command with the `-v` flag to get more information about what is going on.
+I added extensive logging to tarium, mostly for development but it also shows vital debugging information.  
+If you run into any problems, you can re-run a command with the `-v` flag to get more information about what is going on.  
 The more `-v` flags you add, the more verbose the output will be, here's the list:
 - 0 => LevelFilter::Error
 - 1 => LevelFilter::Warn
@@ -92,10 +104,10 @@ The more `-v` flags you add, the more verbose the output will be, here's the lis
 - 3 => LevelFilter::Debug
 - 4+ => LevelFilter::Trace
 
-Keep in mind that the github connection also logs at debug level, which will cluter the output.
+Keep in mind that the github connection also logs at debug level, which will cluter the output.  
 I recommend using `-v` for normal use, and `-vvv` if you run into any problems.
 
-This will create a tarium.log file btw, located in the same folder as the tarium.exe file.
+This will create a tarium.log file btw, located in the same folder as the tarium.exe file.  
 You can just ignore it normally, but if you run into any problems, you can send it to me and i'll try to help you out.
 
 
