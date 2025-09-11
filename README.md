@@ -208,8 +208,9 @@ You can just ignore it normally, but if you run into any problems, you can send 
 - [ ] hook up the hub as api?
     - [ ] found the forge api, no downloads via that one tho i think, don't get your hopes up just yet...
 
-- [ ] enable/disable mods
-    - [ ] like curseforge maybe
-    - [ ] look at archive file and match files to delete them from mods folders for disabling - basically "installing/uninstalling" them
+- [x] enable/disable mods
+    - [x] like curseforge maybe
+    - [x] look at archive file and match files to delete them from mods folders for disabling - basically "installing/uninstalling" them
+    - See [MOD_STATES.md](./MOD_STATES.md) for documentation
 
 - [ ] switch from cli to egui hehe

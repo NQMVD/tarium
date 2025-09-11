@@ -2,6 +2,7 @@ pub mod check;
 pub mod mod_downloadable;
 
 use crate::{
+    archive_analyzer::ArchiveAnalyzer,
     config::{filters::ReleaseChannel, structs::ModIdentifier},
     extract_versions, is_spt_version,
     iter_ext::IterExt as _,
@@ -256,5 +257,31 @@ impl DownloadData {
             .unwrap_or_default()
             .to_string_lossy()
             .to_string()
+    }
+
+    /// Consumes `self`, downloads the archive, extracts it, and tracks files for mod management
+    ///
+    /// Returns the list of extracted files for tracking.
+    pub async fn download_and_extract(
+        self,
+        client: Client,
+        output_dir: impl AsRef<Path>,
+        mod_name: &str,
+        update: impl Fn(usize) + Send,
+    ) -> Result<(usize, String, Vec<String>)> {
+        // First download the archive
+        let (size, filename) = self.download(client, &output_dir, update).await?;
+        
+        // Get the path to the downloaded archive
+        let archive_path = output_dir.as_ref().join(&filename);
+        
+        // Extract and track files
+        let extracted_files = ArchiveAnalyzer::extract_and_track_files(&archive_path, output_dir, mod_name)?;
+        
+        // Remove the archive after extraction (optional, could keep it)
+        std::fs::remove_file(&archive_path)
+            .with_context(|| format!("Failed to remove archive file: {:?}", archive_path))?;
+        
+        Ok((size, filename, extracted_files))
     }
 }

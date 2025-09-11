@@ -1,9 +1,11 @@
 #![cfg_attr(debug_assertions, allow(warnings))]
 
 pub mod add;
+pub mod archive_analyzer;
 pub mod config;
 pub mod iter_ext;
 pub mod upgrade;
+pub mod mod_state;
 
 pub use add::add;
 

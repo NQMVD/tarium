@@ -109,6 +109,18 @@ pub enum SubCommands {
         #[clap(long, short, visible_aliases = ["local", "offline", "no-download"])]
         local_only: bool,
     },
+    /// Enable mods that were previously disabled
+    #[clap(visible_aliases = ["activate", "turn-on"])]
+    Enable {
+        /// List of project IDs or case-insensitive names of mods to enable
+        mod_names: Vec<String>,
+    },
+    /// Disable mods without removing them from the profile
+    #[clap(visible_aliases = ["deactivate", "turn-off"])]
+    Disable {
+        /// List of project IDs or case-insensitive names of mods to disable
+        mod_names: Vec<String>,
+    },
 }
 
 #[derive(Clone, Debug, Subcommand)]
