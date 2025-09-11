@@ -7,8 +7,10 @@ use anyhow::{anyhow, bail, Result};
 use colored::Colorize as _;
 // use indicatif::ProgressBar; // Temporarily disabled progress bar
 use libarov::{
+    archive_analyzer::ArchiveAnalyzer,
     config::{
         filters::ProfileParameters as _,
+        mod_state::ModStateManager,
         structs::{Mod, ModIdentifier, Profile},
     },
     upgrade::{mod_downloadable, DownloadData},
@@ -92,6 +94,79 @@ fn move_processed_archive(from: &Path, archive_store: &Path) -> Result<()> {
             Ok(())
         }
     }
+}
+
+/// Update mod files list after upgrade/extract process
+fn update_mod_files(profile: &mut Profile) -> Result<()> {
+    let mod_state_manager = ModStateManager::new(profile.output_dir.clone());
+    
+    for mod_ in &mut profile.mods {
+        if mod_.enabled {
+            // For enabled mods, scan the output directory for files that might belong to this mod
+            let mut mod_files = Vec::new();
+            
+            // Common patterns for SPT mods
+            let search_patterns = &[
+                format!("BepInEx/plugins/{}.dll", mod_.name.to_lowercase()),
+                format!("user/mods/{}", mod_.name.to_lowercase()),
+                format!("{}.dll", mod_.name.to_lowercase()),
+            ];
+            
+            // Also check for any DLLs or plugins that might belong to this mod
+            if let Ok(entries) = std::fs::read_dir(&profile.output_dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_file() {
+                        if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
+                            let file_lower = file_name.to_lowercase();
+                            
+                            // Check if file matches mod name or common patterns
+                            if file_lower.contains(&mod_.name.to_lowercase()) ||
+                               file_lower.ends_with(".dll") ||
+                               file_lower.ends_with(".plugin") {
+                               
+                                // Get relative path from output directory
+                                if let Ok(relative_path) = path.strip_prefix(&profile.output_dir) {
+                                    mod_files.push(relative_path.to_string_lossy().to_string());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Also check BepInEx/plugins and user/mods directories
+            for subdir in ["BepInEx/plugins", "user/mods"] {
+                let subdir_path = profile.output_dir.join(subdir);
+                if subdir_path.exists() {
+                    if let Ok(entries) = std::fs::read_dir(&subdir_path) {
+                        for entry in entries.flatten() {
+                            let path = entry.path();
+                            if path.is_file() {
+                                if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
+                                    let file_lower = file_name.to_lowercase();
+                                    
+                                    if file_lower.contains(&mod_.name.to_lowercase()) {
+                                        if let Ok(relative_path) = path.strip_prefix(&profile.output_dir) {
+                                            mod_files.push(relative_path.to_string_lossy().to_string());
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Update mod files list
+            mod_.files = mod_files;
+        } else {
+            // For disabled mods, files should already be tracked and in disabled directory
+            // No need to update as they're not active
+        }
+    }
+    
+    Ok(())
 }
 
 fn extract_all_archives(output_dir: &Path) -> Result<()> {
@@ -577,7 +652,7 @@ pub async fn get_platform_downloadables(profile: &Profile) -> Result<(Vec<Downlo
     Ok((to_download, error))
 }
 
-pub async fn upgrade(profile: &Profile, local_only: bool) -> Result<()> {
+pub async fn upgrade(profile: &mut Profile, local_only: bool) -> Result<()> {
     ensure_required_dirs(&profile.output_dir)?;
 
     if local_only {
@@ -661,6 +736,11 @@ pub async fn upgrade(profile: &Profile, local_only: bool) -> Result<()> {
             if let Err(e) = extract_all_archives(&profile.output_dir) {
                 println!("{} Failed to extract some archives: {}", CROSS.red(), e);
             }
+        }
+
+        // Update mod files tracking after upgrade
+        if let Err(e) = update_mod_files(profile) {
+            println!("{} Failed to update mod files tracking: {}", "Warning:".yellow(), e);
         }
 
         if error {

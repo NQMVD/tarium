@@ -130,6 +130,16 @@ pub struct Mod {
     // Kept for backwards compatibility reasons
     // #[serde(skip_serializing)]
     // check_game_version: Option<bool>,
+    
+    // Track which files belong to this mod for enable/disable functionality
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
+    pub files: Vec<String>,
+    
+    // Whether the mod is currently enabled
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    #[serde(default = "default_enabled")]
+    pub enabled: bool,
 }
 
 impl Mod {
@@ -140,8 +150,15 @@ impl Mod {
             identifier,
             // filters,
             // check_game_version: None,
+            files: Vec::new(),
+            enabled: true,
         }
     }
+}
+
+/// Default value for enabled field
+fn default_enabled() -> bool {
+    true
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]

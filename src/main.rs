@@ -27,6 +27,9 @@ mod subcommands;
 #[cfg(test)]
 mod tests;
 
+#[cfg(test)]
+mod mod_state_tests;
+
 use anyhow::{anyhow, bail, ensure, Context as _, Result};
 use clap::{CommandFactory, Parser};
 use cli::{ProfileSubCommands, SubCommands, Tarium};
@@ -297,8 +300,15 @@ async fn actual_main(mut cli_app: Tarium) -> Result<()> {
                         .green(),
                 );
                 for mod_ in &profile.mods {
+                    let status_indicator = if mod_.enabled {
+                        "✓".green()
+                    } else {
+                        "✗".red()
+                    };
+                    
                     println!(
-                        "{:20}  {}",
+                        "{:3} {:17}  {}",
+                        status_indicator,
                         match &mod_.identifier {
                             ModIdentifier::GitHubRepository(..) => "GH".purple().to_string(),
                             _ => todo!(),
@@ -388,6 +398,16 @@ async fn actual_main(mut cli_app: Tarium) -> Result<()> {
             let profile = get_active_profile(&mut config)?;
             check_empty_profile(profile)?;
             subcommands::upgrade(profile, local_only).await?;
+        }
+        SubCommands::Enable { mod_names } => {
+            let profile = get_active_profile(&mut config)?;
+            check_empty_profile(profile)?;
+            subcommands::enable_mods(profile, mod_names)?;
+        }
+        SubCommands::Disable { mod_names } => {
+            let profile = get_active_profile(&mut config)?;
+            check_empty_profile(profile)?;
+            subcommands::disable_mods(profile, mod_names)?;
         }
     }
 
